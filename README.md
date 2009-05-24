@@ -1,6 +1,6 @@
 Simple raytracer in Scheme
 
-Implemented using Petite Chez Scheme 7.4 on a MacBook Pro.
+Implemented using Petite Chez Scheme 7.4b on a MacBook Pro.
 
 To run:
 > petite main.ss
