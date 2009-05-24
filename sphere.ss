@@ -1,0 +1,33 @@
+(define-record <sphere> center radius material)
+
+(define sphere-default
+  (<sphere> make
+    [center (make-vec 0 0 0)]
+    [radius 1]
+    [material material-default]))
+
+(define-syntax sphere
+  (syntax-rules ()
+    [(_ clause ...)
+     (<sphere> copy sphere-default clause ...)]))
+
+(define (sphere-intersections ray center radius)
+  (let* ([radius-squared (* radius radius)]
+         [origin->center (vec-vec-sub center (<ray> origin ray))]
+         [o2c-squared (vec-dot origin->center origin->center)]
+         [closest-approach (vec-dot origin->center (<ray> direction ray))])
+    (if (and (>= o2c-squared radius-squared)
+             (< closest-approach EPSILON))
+        '()
+        (let ([half-chord-squared
+               (+ radius-squared
+                  (* closest-approach closest-approach)
+                  (- o2c-squared))])
+          (if (> half-chord-squared EPSILON)
+              (let ([half-chord (sqrt half-chord-squared)])
+                (list (- closest-approach half-chord)
+                      (+ closest-approach half-chord)))
+              '())))))
+
+(define (sphere-normal center intersect-point)
+  (vec-normalize (vec-vec-sub intersect-point center)))
