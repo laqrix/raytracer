@@ -75,10 +75,13 @@
   (sort-intersections
    (fold-list [obj (<scene> objects scene)] [acc '()]
      (fold-list [t (ray-object-intersect ray obj)] [acc acc]
-       (cons (<intersect> make [time t] [object obj]) acc)))))
+      ;; Make sure we don't accidently hit the object at the intersect-point
+      (if (< t EPSILON)
+          acc
+          (cons (<intersect> make [time t] [object obj]) acc))))))
 
-(define (pixel-color-from-ray ray scene depth)
-  (if (= depth 0)
+(define (pixel-color-from-ray scene ray Kr depth)
+  (if (or (= depth 0) (<= Kr 0))
       (make-color 0 0 0)
       (let ([ls (find-intersections ray scene)])
         (if (null? ls)
@@ -95,29 +98,41 @@
   (define (in-shadow? light)
     ;; TODO: need to limit intersections to between intersect point
     ;; and light position
-    (let ([ls (find-intersections
-      (<ray> make [origin intersect-point]
-             [direction (vec-normalize
-                         (vec-vec-sub (light-position light) intersect-point))])
-      scene)])
-      ;; Make sure we don't accidently hit the object at the intersect-point
-      (let ([ls (fold-list [inter ls] [ls '()]
-                           (if (< (<intersect> time inter) EPSILON)
-                               ls
-                               (cons inter ls)))])
-        (pair? ls))))
+    (pair? (find-intersections
+            (<ray> make [origin intersect-point]
+                   [direction (vec-normalize
+                               (vec-vec-sub (light-position light)
+                                            intersect-point))])
+            scene)))
+  (let ([color
+(color-num-mul
   (fold-list [light (<scene> lights scene)] [color (make-color 0 0 0)]
     (if (in-shadow? light)
-      color
-      (color-color-plus color
-        (let ([lambert (vec-dot
-                        (vec-normalize
-                         (vec-vec-sub (light-position light) intersect-point))
-                        normal)])
-          (color-num-mul
-           (color-color-mul (light-intensity light)
-                            (<material> diffuse material))
-           lambert))))))]))))))
+        color
+        (color-color-plus color
+          (let ([lambert (vec-dot
+                          (vec-normalize
+                           (vec-vec-sub (light-position light) intersect-point))
+                          normal)])
+            (color-num-mul
+             (color-color-mul (light-intensity light)
+                              (<material> diffuse material))
+             lambert)))))
+  Kr)]
+        [reflect (<material> reflection material)])
+    (if (<= reflect 0)
+        color
+        (color-color-plus
+         color
+         (pixel-color-from-ray scene
+           (<ray> make
+                  [origin intersect-point]
+                  [direction (vec-vec-sub
+                              (<ray> direction ray)
+                              (vec-num-mul normal
+                                (* 2 (vec-dot (<ray> direction ray) normal))))])
+           (* Kr reflect)
+           (- depth 1))))))]))))))
 
 (define (ray-gun width height camera)
   (define view (<camera> view camera))
@@ -160,7 +175,7 @@
      (lambda (y)
        (map
         (lambda (x)
-          (pixel-color-from-ray (shoot-ray x y) scene depth))
+          (pixel-color-from-ray scene (shoot-ray x y) 1 depth))
         (iota width)))
      (iota height))))
 
