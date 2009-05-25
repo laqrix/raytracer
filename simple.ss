@@ -19,5 +19,7 @@
                        [reflection .5])]))]
   [lights
    (list
-    (point-light [origin (make-vec 0 240 -100)])
-    (point-light [origin (make-vec 640 240 -10000)]))])
+    (point-light [origin (make-vec 0 240 -100)]
+                 [intensity (make-color 1 1 1)])
+    (point-light [origin (make-vec 640 240 -10000)]
+                 [intensity (make-color .6 .7 1)]))])
