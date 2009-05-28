@@ -76,6 +76,9 @@
         (make-vec 0 0 0)
         (vec-num-mul v (/ 1 mag)))))
 
+(define (vec-reverse v)
+  (vec-num-mul v -1))
+
 ;; Matrix
 (define (build-identity-matrix) (matrix-identity 3))
 

@@ -1,3 +1,5 @@
+;; TODO: Why are light Intensities close to 100 rather than 0 to 1?
+(case-sensitive #t)
 (module (define-scheme-record)
   (import scheme)
   (define-syntax define-scheme-record (identifier-syntax define-record)))
@@ -8,19 +10,6 @@
 (define EPSILON 0.0005)
 (define MAXDEPTH 5)
 
-(define-record <material>
-  diffuse                               ; <color>
-  reflection                            ; 0..1
-  )
-(define material-default
-  (<material> make
-    [diffuse (make-color 0 0 0)]
-    [reflection 0]))
-(define-syntax material
-  (syntax-rules ()
-    [(_ clause ...)
-     (<material> copy material-default clause ...)]))
-
 (define-record <scene> background-color objects lights)
 
 (define-record <view> left right bottom top)
@@ -29,6 +18,7 @@
 (define-record <intersect> time object)
 (define-record <ray> origin direction)
 
+(load "shaders.ss")
 (load "lights.ss")
 (load "sphere.ss")
 
@@ -47,16 +37,21 @@
       '()
       (append (f (car ls)) (flat-map f (cdr ls)))))
 
-;;
-
-(define (object-material object)
+(define (object-color object)
   (match object
-    [`(<sphere> [material ,x]) x]))
+    [`(<sphere> [color ,x]) x]))
+
+(define (object-shader object)
+  (match object
+    [`(<sphere> [shader ,x]) x]))
 
 (define (object-normal object intersect-point)
   (match object
     [`(<sphere> [center ,center])
      (sphere-normal center intersect-point)]))
+
+(define (traverse-ray ray t)
+  (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
 
 (define (ray-object-intersect ray object)
   ;; TODO: intersections are likely to be more than times.
@@ -80,6 +75,30 @@
           acc
           (cons (<intersect> make [time t] [object obj]) acc))))))
 
+(define scene)                          ; should really be in user env
+(define object)                         ; should really be in user env
+(define intersect-point)                ; should really be in user env
+(define normal)                         ; should really be in user env
+(define incoming)                       ; should really be in user env
+(define (object-shade s obj ip i)
+  (let ([shader (object-shader obj)])
+    (if shader
+        (fluid-let ([scene s]
+                    [object obj]
+                    [intersect-point ip]
+                    [normal (object-normal obj ip)]
+                    [incoming i])
+          (shader))
+        (error 'object-shade "no object shader defined for ~a" obj))))
+
+(define light)                          ; should really be in user env
+(define (light-shade l)
+  (let ([shader (light-shader l)])
+    (if shader
+        (fluid-let ([light l])
+          (shader))
+        (error 'light-shade "no light shader defined for ~a" l))))
+
 (define (pixel-color-from-ray scene ray Kr depth)
   (if (or (= depth 0) (<= Kr 0))
       (make-color 0 0 0)
@@ -89,50 +108,11 @@
             (let ([first (car ls)])
               (match first
                 [`(<intersect> [time ,t] [object ,obj])
-;; TODO: shading _correctly_
-(let* ([intersect-point
-        (vec-vec-plus (<ray> origin ray)
-                      (vec-num-mul (<ray> direction ray) t))]
-       [normal (object-normal obj intersect-point)]
-       [material (object-material obj)])
-  (define (in-shadow? light)
-    ;; TODO: need to limit intersections to between intersect point
-    ;; and light position
-    (pair? (find-intersections
-            (<ray> make [origin intersect-point]
-                   [direction (vec-normalize
-                               (vec-vec-sub (light-position light)
-                                            intersect-point))])
-            scene)))
-  (let ([color
-(color-num-mul
-  (fold-list [light (<scene> lights scene)] [color (make-color 0 0 0)]
-    (if (in-shadow? light)
-        color
-        (color-color-plus color
-          (let ([lambert (vec-dot
-                          (vec-normalize
-                           (vec-vec-sub (light-position light) intersect-point))
-                          normal)])
-            (color-num-mul
-             (color-color-mul (light-intensity light)
-                              (<material> diffuse material))
-             lambert)))))
-  Kr)]
-        [reflect (<material> reflection material)])
-    (if (<= reflect 0)
-        color
-        (color-color-plus
-         color
-         (pixel-color-from-ray scene
-           (<ray> make
-                  [origin intersect-point]
-                  [direction (vec-vec-sub
-                              (<ray> direction ray)
-                              (vec-num-mul normal
-                                (* 2 (vec-dot (<ray> direction ray) normal))))])
-           (* Kr reflect)
-           (- depth 1))))))]))))))
+                 (let ([incoming (<ray> direction ray)]
+                       [intersect-point (traverse-ray ray t)])
+                   (color-num-mul
+                    (object-shade scene obj intersect-point incoming)
+                    Kr))]))))))
 
 (define (ray-gun width height camera)
   (define view (<camera> view camera))
@@ -187,9 +167,12 @@
 
 (define (load-scene filename)
   (let ([ip (open-input-file filename)])
-    (let ([x (read ip)])
-      (close-port ip)
-      (eval x))))
+    (let lp ([x (read ip)] [result (void)])
+      (if (eof-object? x)
+          (let ()
+            (close-port ip)
+            result)
+          (lp (read ip) (eval x))))))
 
 (define (x)
   (let ([scene (load-scene "simple.ss")]
@@ -199,3 +182,17 @@
                   [distance 1]
                   [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])])
     (raytrace 640 480 "output" MAXDEPTH camera scene pixel-list-simple)))
+
+(define (y)
+  (let ([scene (load-scene "test.ss")]
+        [camera (<camera> make
+                  [translation (make-vec 0 0 100)]
+                  [target (make-vec 0 0 0)]
+                  [distance 1]
+                  [view (<view> make [left -1] [right 1] [bottom -1] [top 1])])])
+
+    #;
+    (let ([shoot-ray (ray-gun 128 128 camera)])
+      (pixel-color-from-ray scene (shoot-ray 63 63) 1 MAXDEPTH))
+
+    (raytrace 128 128 "output" MAXDEPTH camera scene pixel-list-simple)))

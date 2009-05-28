@@ -1,10 +1,11 @@
-(define-record <sphere> center radius material)
+(define-record <sphere> center radius shader color)
 
 (define sphere-default
   (<sphere> make
     [center (make-vec 0 0 0)]
     [radius 1]
-    [material material-default]))
+    [shader #f]
+    [color (make-color 0 0 0)]))
 
 (define-syntax sphere
   (syntax-rules ()
