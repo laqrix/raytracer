@@ -80,14 +80,16 @@
 (define intersect-point)                ; should really be in user env
 (define normal)                         ; should really be in user env
 (define incoming)                       ; should really be in user env
-(define (object-shade s obj ip i)
+(define depth)                          ; should really be in user env
+(define (object-shade s obj ip i d)
   (let ([shader (object-shader obj)])
     (if shader
         (fluid-let ([scene s]
                     [object obj]
                     [intersect-point ip]
                     [normal (object-normal obj ip)]
-                    [incoming i])
+                    [incoming i]
+                    [depth d])
           (shader))
         (error 'object-shade "no object shader defined for ~a" obj))))
 
@@ -111,7 +113,7 @@
                  (let ([incoming (<ray> direction ray)]
                        [intersect-point (traverse-ray ray t)])
                    (color-num-mul
-                    (object-shade scene obj intersect-point incoming)
+                    (object-shade scene obj intersect-point incoming depth)
                     Kr))]))))))
 
 (define (ray-gun width height camera)
