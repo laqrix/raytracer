@@ -28,6 +28,14 @@
                    [direction (vec-normalize (vec-vec-sub light-pos point))])
             scene)))
 
+(define-shader ambient-light ([color (make-color 1 1 1)] [intensity 1])
+  (color-num-mul color intensity))
+
+(define-shader distant-light ([color (make-color 1 1 1)] [intensity 1])
+  (if (in-shadow? intersect-point (light-position light))
+      (make-color 0 0 0)
+      (color-num-mul color intensity)))
+
 (define-shader point-light ([color (make-color 1 1 1)] [intensity 1])
   ;; Light shaders, L is from the light to the surface
   (let ([position (light-position light)])

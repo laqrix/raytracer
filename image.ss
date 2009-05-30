@@ -1,5 +1,5 @@
 (define (as-byte x)
-  (exact (min (truncate (* x 255)) 255)))
+  (exact (min (truncate (* (max 0 x) 255)) 255)))
 
 (define (write-pixels-to-ppm width height pixels filename)
   (let* ([filename (string-append filename ".ppm")]

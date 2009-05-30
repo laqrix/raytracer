@@ -33,7 +33,7 @@
    (list
     (<light> copy light-default
              [position (make-vec 0 240 -100)]
-             [shader (point-light [color (make-color 1 1 1)] [intensity 20000])])
+             [shader (distant-light [color (make-color 1 1 1)] [intensity 1])])
     (<light> copy light-default
              [position (make-vec 640 240 -10000)]
-             [shader (point-light [color (make-color .6 .7 1)] [intensity 100000000/2])]))])
+             [shader (distant-light [color (make-color .6 .7 1)] [intensity .5])]))])
