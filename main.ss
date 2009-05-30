@@ -184,17 +184,3 @@
                   [distance 1]
                   [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])])
     (raytrace 640 480 "output" MAXDEPTH camera scene pixel-list-simple)))
-
-(define (y)
-  (let ([scene (load-scene "test.ss")]
-        [camera (<camera> make
-                  [translation (make-vec 0 0 100)]
-                  [target (make-vec 0 0 0)]
-                  [distance 1]
-                  [view (<view> make [left -1] [right 1] [bottom -1] [top 1])])])
-
-    #;
-    (let ([shoot-ray (ray-gun 128 128 camera)])
-      (pixel-color-from-ray scene (shoot-ray 63 63) 1 MAXDEPTH))
-
-    (raytrace 128 128 "output" MAXDEPTH camera scene pixel-list-simple)))
