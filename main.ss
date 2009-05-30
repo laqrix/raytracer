@@ -1,4 +1,3 @@
-;; TODO: Why are light Intensities close to 100 rather than 0 to 1?
 (case-sensitive #t)
 (module (define-scheme-record)
   (import scheme)

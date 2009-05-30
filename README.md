@@ -15,9 +15,6 @@ Output will go to 'output.tga'.
 
 Things to do:
 
-- Fix bug: There is clearly a bug in the lighting intensities. I need
-  to find an squish it.
-
 - Take a look at performance. It can always be faster.
 
 - More objects
