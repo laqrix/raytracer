@@ -11,4 +11,4 @@
                   [target (make-vec 0 0 0)]
                   [distance 1]
                   [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])])
-    (raytrace 128 128 basename MAXDEPTH camera scene pixel-list-simple)))
+    (raytrace 128 128 basename MAXDEPTH camera scene image-simple)))

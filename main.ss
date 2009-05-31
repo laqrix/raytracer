@@ -32,11 +32,6 @@
        init
        ls)]))
 
-(define (flat-map f ls)
-  (if (null? ls)
-      '()
-      (append (f (car ls)) (flat-map f (cdr ls)))))
-
 (define (object-color object)
   (match object
     [`(<sphere> [color ,x]) x]))
@@ -151,21 +146,17 @@
           [direction (vec-normalize
                       (vec-vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
 
-(define (pixel-list-simple width height camera scene depth)
+(define (image-simple width height camera scene depth)
   (let ([shoot-ray (ray-gun width height camera)])
-    (flat-map
-     (lambda (y)
-       (map
-        (lambda (x)
-          (pixel-color-from-ray scene (shoot-ray x y) 1 depth))
-        (iota width)))
-     (iota height))))
+    (make-image width height 0 0
+      (lambda (set-pixel)
+        (do ([y 0 (+ y 1)]) ((= y height))
+          (do ([x 0 (+ x 1)]) ((= x width))
+            (set-pixel x y (pixel-color-from-ray scene (shoot-ray x y) 1 depth))))))))
 
 (define (raytrace width height filename depth camera scene f)
-  (let ([pixels (time (f width height camera scene depth))])
-    (write-pixels-to-tga width height pixels filename)
-    ;;(write-pixels-to-ppm width height pixels filename)
-    ))
+  (let ([image (time (f width height camera scene depth))])
+    (write-tga image filename)))
 
 (define (load-scene filename)
   (let ([ip (open-input-file filename)])
@@ -183,4 +174,4 @@
                   [target (make-vec 320 240 0)]
                   [distance 1]
                   [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])])
-    (raytrace 640 480 "output" MAXDEPTH camera scene pixel-list-simple)))
+    (raytrace 640 480 "output" MAXDEPTH camera scene image-simple)))
