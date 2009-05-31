@@ -9,7 +9,7 @@ all: render
 include .src
 
 %.tga: %.scene run.ss
-	echo '(render "$*")' | $(scheme) run.ss
+	echo '(load "$<")' | $(scheme) run.ss
 
 .PHONY: render
 render: $(src:.scene=.tga) run.ss

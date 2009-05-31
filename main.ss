@@ -154,24 +154,6 @@
           (do ([x 0 (+ x 1)]) ((= x width))
             (set-pixel x y (pixel-color-from-ray scene (shoot-ray x y) 1 depth))))))))
 
-(define (raytrace width height filename depth camera scene f)
-  (let ([image (time (f width height camera scene depth))])
+(define (render f filename width height camera scene)
+  (let ([image (time (f width height camera scene MAXDEPTH))])
     (write-tga image filename)))
-
-(define (load-scene filename)
-  (let ([ip (open-input-file filename)])
-    (let lp ([x (read ip)] [result (void)])
-      (if (eof-object? x)
-          (let ()
-            (close-port ip)
-            result)
-          (lp (read ip) (eval x))))))
-
-(define (x)
-  (let ([scene (load-scene "simple.ss")]
-        [camera (<camera> make
-                  [translation (make-vec 320 240 -1000)]
-                  [target (make-vec 320 240 0)]
-                  [distance 1]
-                  [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])])
-    (raytrace 640 480 "output" MAXDEPTH camera scene image-simple)))
