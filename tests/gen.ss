@@ -20,6 +20,24 @@
     [(_ filename expr ...)
      ($build filename '(expr ...))]))
 
+(build "ambient"
+  (define-shader plain ([Ka 1])
+    (color-color-mul
+     (object-color object)
+     (color-num-mul ((ambient)) Ka)))
+  (<scene> make
+    [background-color (make-color 0 .3 .3)]
+    [objects
+     (list
+      (sphere [center (make-vec 0 0 0)]
+              [radius 1]
+              [shader (plain)]
+              [color (make-color 1 1 1)]))]
+    [lights
+     (list
+      (ambient-light [color (make-color 1 1 1)]
+                     [intensity 1]))]))
+
 (build "basic"
   (define-shader matte ([Ka 1] [Kd 1])
     (let ([Nf (faceforward (vec-normalize normal) incoming)])
@@ -38,10 +56,9 @@
               [color (make-color 1 1 1)]))]
     [lights
      (list
-      (<light> copy light-default
-               [position (make-vec -10 10 10)]
-               [shader (point-light [color (make-color 1 1 1)]
-                                    [intensity 50])]))]))
+      (point-light [position (make-vec -10 10 10)]
+                   [color (make-color 1 1 1)]
+                   [intensity 50]))]))
 
 (build "spheres"
   (define-shader shiny ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
@@ -76,13 +93,11 @@
               [color (make-color 1 0 1)]))]
     [lights
      (list
-      (<light> copy light-default
-               [position (make-vec -5 0 5)]
-               [shader (point-light [color (make-color 1 1 1)]
-                                    [intensity 15])])
-      (<light> copy light-default
-               [position (make-vec 0 0 10)]
-               [shader (point-light [color (make-color .6 .7 1)]
-                                    [intensity 10])]))]))
+      (point-light [position (make-vec -5 0 5)]
+                   [color (make-color 1 1 1)]
+                   [intensity 15])
+      (point-light [position (make-vec 0 0 10)]
+                   [color (make-color .6 .7 1)]
+                   [intensity 10]))]))
 
 (exit)

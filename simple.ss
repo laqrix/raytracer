@@ -31,9 +31,9 @@
             [color (make-color 1 0 1)]))]
   [lights
    (list
-    (<light> copy light-default
-             [position (make-vec 0 240 -100)]
-             [shader (distant-light [color (make-color 1 1 1)] [intensity 1])])
-    (<light> copy light-default
-             [position (make-vec 640 240 -10000)]
-             [shader (distant-light [color (make-color .6 .7 1)] [intensity .5])]))])
+    (distant-light [position (make-vec 0 240 -100)]
+                   [color (make-color 1 1 1)]
+                   [intensity 1])
+    (distant-light [position (make-vec 640 240 -10000)]
+                   [color (make-color .6 .7 1)]
+                   [intensity .5]))])

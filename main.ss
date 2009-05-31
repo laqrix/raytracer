@@ -3,6 +3,7 @@
   (import scheme)
   (define-syntax define-scheme-record (identifier-syntax define-record)))
 (include "records.ss")
+(include "defaults.ss")
 (include "math.ss")
 (include "color.ss")
 
