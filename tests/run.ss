@@ -1,5 +1,3 @@
 (reset-handler (lambda () (exit 1)))
-(let ([dir (cd)])
-  (cd "..")
-  (load "main.ss")
-  (cd dir))
+(parameterize ([cd ".."])
+  (load "main.ss"))
