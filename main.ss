@@ -21,6 +21,7 @@
 (load "shaders.ss")
 (load "lights.ss")
 (load "sphere.ss")
+(load "plane.ss")
 
 (load "image.ss")
 
@@ -34,16 +35,20 @@
 
 (define (object-color object)
   (match object
-    [`(<sphere> [color ,x]) x]))
+    [`(<sphere> [color ,x]) x]
+    [`(<plane> [color ,x]) x]))
 
 (define (object-shader object)
   (match object
-    [`(<sphere> [shader ,x]) x]))
+    [`(<sphere> [shader ,x]) x]
+    [`(<plane> [shader ,x]) x]))
 
 (define (object-normal object intersect-point)
   (match object
     [`(<sphere> [center ,center])
-     (sphere-normal center intersect-point)]))
+     (sphere-normal center intersect-point)]
+    [`(<plane> [M ,M])
+     (plane-normal M intersect-point)]))
 
 (define (traverse-ray ray t)
   (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
@@ -55,6 +60,8 @@
   (match object
     [`(<sphere> [center ,center] [radius ,radius])
      (sphere-intersections ray center radius)]
+    [`(<plane> [center ,center] [Mi ,Mi])
+     (plane-intersections ray center Mi)]
     [,_ '()]))
 
 (define (sort-intersections ls)

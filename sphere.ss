@@ -1,16 +1,8 @@
 (define-record <sphere> center radius shader color)
 
-(define sphere-default
-  (<sphere> make
-    [center (make-vec 0 0 0)]
-    [radius 1]
-    [shader #f]
-    [color (make-color 0 0 0)]))
-
-(define-syntax sphere
-  (syntax-rules ()
-    [(_ clause ...)
-     (<sphere> copy sphere-default clause ...)]))
+(define-defaults sphere ([center (make-vec 0 0 0)] [radius 1]
+                         [shader #f] [color (make-color 0 0 0)])
+  (<sphere> make [center center] [radius radius] [shader shader] [color color]))
 
 (define (sphere-intersections ray center radius)
   (let* ([radius-squared (* radius radius)]

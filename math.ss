@@ -90,3 +90,46 @@
                  (a 2 1 (vec-j v))
                  (a 3 1 (vec-k v)))))])
     (make-vec (r 1 1) (r 2 1) (r 3 1))))
+
+(define (scale x y z)
+  (make-matrix 3 3
+    (lambda (m n set)
+      (set 1 1 x)
+      (set 2 2 y)
+      (set 3 3 z))))
+
+(define (rotate-x degrees)
+  (let ([ang (degrees->radians degrees)])
+    (let ([ca (cos ang)]
+          [sa (sin ang)])
+      (make-matrix 3 3
+        (lambda (m n set)
+          (set 1 1 1)
+          (set 2 2 ca)
+          (set 2 3 (- sa))
+          (set 3 2 sa)
+          (set 3 3 ca))))))
+
+(define (rotate-y degrees)
+  (let ([ang (degrees->radians degrees)])
+    (let ([ca (cos ang)]
+          [sa (sin ang)])
+      (make-matrix 3 3
+        (lambda (m n set)
+          (set 1 1 ca)
+          (set 1 3 sa)
+          (set 2 2 1)
+          (set 3 1 (- sa))
+          (set 3 3 ca))))))
+
+(define (rotate-z degrees)
+  (let ([ang (degrees->radians degrees)])
+    (let ([ca (cos ang)]
+          [sa (sin ang)])
+      (make-matrix 3 3
+        (lambda (m n set)
+          (set 1 1 ca)
+          (set 1 2 (- sa))
+          (set 2 1 sa)
+          (set 2 2 ca)
+          (set 3 3 1))))))

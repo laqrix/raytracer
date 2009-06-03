@@ -14,7 +14,6 @@ Things to do:
 - Take a look at performance. It can always be faster.
 
 - More objects
-  - plane
   - cylinder
   - cone
   - polyhedra - cube, tetrahedron, octahedron, icosahedron
