@@ -45,8 +45,8 @@
 
 (define (object-normal object intersect-point)
   (match object
-    [`(<sphere> [center ,center])
-     (sphere-normal center intersect-point)]
+    [`(<sphere> [center ,center] [M ,M])
+     (sphere-normal center M intersect-point)]
     [`(<plane> [M ,M])
      (plane-normal M intersect-point)]))
 
@@ -58,8 +58,8 @@
   ;; TODO: ray likely needs to be transformed into unit space -- maybe
   ;; do that within each object.
   (match object
-    [`(<sphere> [center ,center] [radius ,radius])
-     (sphere-intersections ray center radius)]
+    [`(<sphere> [center ,center] [Mi ,Mi])
+     (sphere-intersections ray center Mi)]
     [`(<plane> [center ,center] [Mi ,Mi])
      (plane-intersections ray center Mi)]
     [,_ '()]))
