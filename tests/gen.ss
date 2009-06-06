@@ -143,4 +143,47 @@
                      [color (make-color .6 .7 1)]
                      [intensity 10]))])))
 
+(build "metal-ball"
+  (define-shader shiny ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
+    (let* ([Nf (faceforward (vec-normalize normal) incoming)]
+           [IN (vec-normalize incoming)]
+           [V (vec-reverse IN)]
+           [R (reflect IN Nf)])
+      (color-color-mul
+       (object-color object)
+       (color-color-plus
+        (color-color-plus
+         (color-color-plus
+          (color-num-mul ((ambient)) Ka)
+          (color-num-mul ((diffuse [N Nf])) Kd))
+         (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))
+        (sample-environment scene intersect-point R Kr depth)))))
+  (render image-simple "metal-ball" 128 128
+    (<camera> make (translation (make-vec 0 0 10))
+      (target (make-vec 0 0 0)) (distance 1)
+      (view
+       (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+    (<scene>
+     make
+     (background-color (make-color 0 .3 .3))
+     (objects
+      (list (plane
+             [center (make-vec 0 -1 0)]
+             [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+             (color (make-color 0 .6 0))
+             (shader (shiny [Kr 0])))
+        (sphere
+         (color (make-color .5 .5 .5))
+         (shader (shiny [Kr 1])))))
+     (lights
+      (list
+       (distant-light
+        (position (make-vec -10 10 10))
+        (color (make-color 1 1 1))
+        (intensity .9))
+       (point-light
+        (position (make-vec 1 1 1))
+        (color (make-color 1 1 1))
+        (intensity 1)))))))
+
 (exit)
