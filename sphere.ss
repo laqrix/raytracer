@@ -15,9 +15,8 @@
            [c (- (vec-dot origin origin) 1)]
            [dis (- (* b b) (* a c))])
       (if (>= dis 0)
-          (let ([t1 (/ (- (- b) (sqrt dis)) a)]
-                [t2 (/ (+ (- b) (sqrt dis)) a)])
-            (list t1 t2))
+          (let ([d (sqrt dis)])
+            (list (/ (- (- b) d) a) (/ (+ (- b) d) a)))
           '()))))
 
 (define (sphere-normal center M intersect-point)

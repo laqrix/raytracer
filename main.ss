@@ -22,6 +22,7 @@
 (load "lights.ss")
 (load "sphere.ss")
 (load "plane.ss")
+(load "quadric.ss")
 
 (load "image.ss")
 
@@ -36,19 +37,23 @@
 (define (object-color object)
   (match object
     [`(<sphere> [color ,x]) x]
-    [`(<plane> [color ,x]) x]))
+    [`(<plane> [color ,x]) x]
+    [`(<quadric> [color ,x]) x]))
 
 (define (object-shader object)
   (match object
     [`(<sphere> [shader ,x]) x]
-    [`(<plane> [shader ,x]) x]))
+    [`(<plane> [shader ,x]) x]
+    [`(<quadric> [shader ,x]) x]))
 
 (define (object-normal object intersect-point)
   (match object
     [`(<sphere> [center ,center] [M ,M])
      (sphere-normal center M intersect-point)]
     [`(<plane> [M ,M])
-     (plane-normal M intersect-point)]))
+     (plane-normal M intersect-point)]
+    [`(<quadric> [center ,center] [M ,M]  [coefficients ,coefficients])
+     (quadric-normal center M coefficients intersect-point)]))
 
 (define (traverse-ray ray t)
   (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
@@ -62,7 +67,8 @@
      (sphere-intersections ray center Mi)]
     [`(<plane> [center ,center] [Mi ,Mi])
      (plane-intersections ray center Mi)]
-    [,_ '()]))
+    [`(<quadric> [center ,center] [Mi ,Mi] [coefficients ,coefficients])
+     (quadric-intersections ray center Mi coefficients)]))
 
 (define (sort-intersections ls)
   (sort (lambda (x y) (< (<intersect> time x) (<intersect> time y)))

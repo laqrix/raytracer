@@ -20,12 +20,12 @@
     [(_ filename expr ...)
      ($build filename '(expr ...))]))
 
-(build "ambient"
+(build "ambient-light"
   (define-shader plain ([Ka 1])
     (color-color-mul
      (object-color object)
      (color-num-mul ((ambient)) Ka)))
-  (render image-simple "ambient" 128 128 
+  (render image-simple "ambient-light" 128 128 
     (<camera> make
       [translation (make-vec 0 0 10)]
       [target (make-vec 0 0 0)]
@@ -44,7 +44,7 @@
         (ambient-light [color (make-color 1 1 1)]
                        [intensity 1]))])))
 
-(build "basic"
+(build "distant-light"
   (define-shader matte ([Ka 1] [Kd 1])
     (let ([Nf (faceforward (vec-normalize normal) incoming)])
       (color-color-mul
@@ -52,7 +52,35 @@
        (color-color-plus
         (color-num-mul ((ambient)) Ka)
         (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "basic" 128 128
+  (render image-simple "distant-light" 128 128
+    (<camera> make
+      [translation (make-vec 0 0 10)]
+      [target (make-vec 0 0 0)]
+      [distance 1]
+      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+    (<scene> make
+      [background-color (make-color 0 .3 .3)]
+      [objects
+       (list
+        (sphere [center (make-vec 0 0 0)]
+                [radius 1]
+                [shader (matte)]
+                [color (make-color 1 1 1)]))]
+      [lights
+       (list
+        (distant-light [position (make-vec -10 10 10)]
+                     [color (make-color 1 1 1)]
+                     [intensity 1]))])))
+
+(build "point-light"
+  (define-shader matte ([Ka 1] [Kd 1])
+    (let ([Nf (faceforward (vec-normalize normal) incoming)])
+      (color-color-mul
+       (object-color object)
+       (color-color-plus
+        (color-num-mul ((ambient)) Ka)
+        (color-num-mul ((diffuse [N Nf])) Kd)))))
+  (render image-simple "point-light" 128 128
     (<camera> make
       [translation (make-vec 0 0 10)]
       [target (make-vec 0 0 0)]
@@ -70,7 +98,7 @@
        (list
         (point-light [position (make-vec -10 10 10)]
                      [color (make-color 1 1 1)]
-                     [intensity 50]))])))
+                     [intensity 100]))])))
 
 (build "plane"
   (define-shader matte ([Ka 1] [Kd 1])
@@ -96,6 +124,42 @@
         (distant-light [position (make-vec -10 10 10)]
           [color (make-color 1 1 1)]
           [intensity 1]))])))
+
+(for-each
+ (lambda (p)
+   (let ([name (string-append "quadric-" (car p))]
+         [coef (cdr p)])
+     ($build name
+       `((define-shader matte ([Ka 1] [Kd 1])
+           (let ([Nf (faceforward (vec-normalize normal) incoming)])
+             (color-color-mul
+              (object-color object)
+              (color-color-plus
+               (color-num-mul ((ambient)) Ka)
+               (color-num-mul ((diffuse [N Nf])) Kd)))))
+         (render image-simple ,name 128 128
+           (<camera> make
+             [translation (make-vec 0 0 10)]
+             [target (make-vec 0 0 0)]
+             [distance 1]
+             [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+           (<scene> make
+             [background-color (make-color 0 .3 .3)]
+             [objects
+              (list
+               (quadric [color (make-color 0 1 0)] [shader (matte)]
+                 [coefficients ,coef]
+                 [M (matrix-mul (rotate-x -90) (rotate-y 10))]
+                 ))]
+             [lights
+              (list
+               (distant-light [position (make-vec -1 1 10)]
+                 [color (make-color 1 1 1)]
+                 [intensity 1]))]))))))
+ '(("sphere" . #(1 1 1 0 0 0 0 0 0 -1))
+   ("cylinder" . #(1 1 0 0 0 0 0 0 0 -1))
+   ("cone" . #(1 1 -1 0 0 0 0 0 0 0))
+   ("hyperboloid" . #(1 1 -1 0 0 0 0 0 0 -1))))
 
 (build "spheres"
   (define-shader shiny ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
