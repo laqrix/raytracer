@@ -15,14 +15,12 @@
 (define-record <view> left right bottom top)
 (define-record <camera> translation target distance view)
 
-(define-record <intersect> time object)
+(define-record <intersect> time object extra)
 (define-record <ray> origin direction)
 
 (load "shaders.ss")
 (load "lights.ss")
-(load "sphere.ss")
-(load "plane.ss")
-(load "quadric.ss")
+(load "objects.ss")
 
 (load "image.ss")
 
@@ -34,41 +32,8 @@
        init
        ls)]))
 
-(define (object-color object)
-  (match object
-    [`(<sphere> [color ,x]) x]
-    [`(<plane> [color ,x]) x]
-    [`(<quadric> [color ,x]) x]))
-
-(define (object-shader object)
-  (match object
-    [`(<sphere> [shader ,x]) x]
-    [`(<plane> [shader ,x]) x]
-    [`(<quadric> [shader ,x]) x]))
-
-(define (object-normal object intersect-point)
-  (match object
-    [`(<sphere> [center ,center] [M ,M])
-     (sphere-normal center M intersect-point)]
-    [`(<plane> [M ,M])
-     (plane-normal M intersect-point)]
-    [`(<quadric> [center ,center] [M ,M]  [coefficients ,coefficients])
-     (quadric-normal center M coefficients intersect-point)]))
-
 (define (traverse-ray ray t)
   (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
-
-(define (ray-object-intersect ray object)
-  ;; TODO: intersections are likely to be more than times.
-  ;; TODO: ray likely needs to be transformed into unit space -- maybe
-  ;; do that within each object.
-  (match object
-    [`(<sphere> [center ,center] [Mi ,Mi])
-     (sphere-intersections ray center Mi)]
-    [`(<plane> [center ,center] [Mi ,Mi])
-     (plane-intersections ray center Mi)]
-    [`(<quadric> [center ,center] [Mi ,Mi] [coefficients ,coefficients])
-     (quadric-intersections ray center Mi coefficients)]))
 
 (define (sort-intersections ls)
   (sort (lambda (x y) (< (<intersect> time x) (<intersect> time y)))
@@ -77,11 +42,11 @@
 (define (find-intersections ray scene)
   (sort-intersections
    (fold-list [obj (<scene> objects scene)] [acc '()]
-     (fold-list [t (ray-object-intersect ray obj)] [acc acc]
-      ;; Make sure we don't accidently hit the object at the intersect-point
-      (if (< t EPSILON)
-          acc
-          (cons (<intersect> make [time t] [object obj]) acc))))))
+     (fold-list [t (object-intersections obj ray)] [acc acc]
+       ;; Make sure we don't accidently hit the object at the intersect-point
+       (if (< (<intersect> time t) EPSILON)
+           acc
+           (cons t acc))))))
 
 (define scene)                          ; should really be in user env
 (define object)                         ; should really be in user env
@@ -89,13 +54,13 @@
 (define normal)                         ; should really be in user env
 (define incoming)                       ; should really be in user env
 (define depth)                          ; should really be in user env
-(define (object-shade s obj ip i d)
+(define (object-shade s obj extra ip i d)
   (let ([shader (object-shader obj)])
     (if shader
         (fluid-let ([scene s]
                     [object obj]
                     [intersect-point ip]
-                    [normal (object-normal obj ip)]
+                    [normal (object-normal obj extra ip)]
                     [incoming i]
                     [depth d])
           (shader))
@@ -117,11 +82,11 @@
             (<scene> background-color scene)
             (let ([first (car ls)])
               (match first
-                [`(<intersect> [time ,t] [object ,obj])
+                [`(<intersect> [time ,t] [object ,obj] [extra ,extra])
                  (let ([incoming (<ray> direction ray)]
                        [intersect-point (traverse-ray ray t)])
                    (color-num-mul
-                    (object-shade scene obj intersect-point incoming depth)
+                    (object-shade scene obj extra intersect-point incoming depth)
                     Kr))]))))))
 
 (define (ray-gun width height camera)

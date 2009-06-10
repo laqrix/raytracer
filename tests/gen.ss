@@ -125,6 +125,62 @@
           [color (make-color 1 1 1)]
           [intensity 1]))])))
 
+(build "cube"
+  (define-shader matte ([Ka 1] [Kd 1])
+    (let ([Nf (faceforward (vec-normalize normal) incoming)])
+      (color-color-mul
+       (object-color object)
+       (color-color-plus
+        (color-num-mul ((ambient)) Ka)
+        (color-num-mul ((diffuse [N Nf])) Kd)))))
+  (render image-simple "cube" 128 128
+    (<camera> make
+      [translation (make-vec 0 0 10)]
+      [target (make-vec 0 0 0)]
+      [distance 1]
+      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+    (<scene> make
+      [background-color (make-color 0 .3 .3)]
+      [objects
+       (list
+        (cube [color (make-color 0 1 0)] [shader (matte)]
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]))]
+      [lights
+       (list
+        (distant-light [position (make-vec -10 10 10)]
+          [color (make-color 1 1 1)]
+          [intensity 1]))])))
+
+(build "tetrahedron"
+  (define-shader matte ([Ka 1] [Kd 1])
+    (let ([Nf (faceforward (vec-normalize normal) incoming)])
+      (color-color-mul
+       (object-color object)
+       (color-color-plus
+        (color-num-mul ((ambient)) Ka)
+        (color-num-mul ((diffuse [N Nf])) Kd)))))
+  (render image-simple "tetrahedron" 128 128
+    (<camera> make
+      [translation (make-vec 0 0 10)]
+      [target (make-vec 0 0 0)]
+      [distance 1]
+      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+    (<scene> make
+      [background-color (make-color 0 .3 .3)]
+      [objects
+       (list
+        (tetrahedron [color (make-color 0 1 0)] [shader (matte)]
+          [M (matrix-mul (rotate-x -45) (rotate-z 45))]
+          ))]
+      [lights
+       (list
+        (distant-light [position (make-vec -10 10 10)]
+          [color (make-color 1 1 1)]
+          [intensity 1])
+        (distant-light [position (make-vec 10 -10 10)]
+          [color (make-color 1 1 1)]
+          [intensity 1/2]))])))
+
 (for-each
  (lambda (p)
    (let ([name (string-append "quadric-" (car p))]

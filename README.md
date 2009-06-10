@@ -16,7 +16,7 @@ Things to do:
 - More objects
   - cylinder
   - cone
-  - polyhedra - cube, tetrahedron, octahedron, icosahedron
+  - polyhedra - octahedron, icosahedron
 
 - More lights
   - spot light
