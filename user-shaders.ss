@@ -44,12 +44,11 @@
       (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
       specularcolor))))
 
-#;;
 (define-shader stripes ([Kd 1] [Ka .5] [frequency 10]
                         [blackcolor (make-color 0 0 0)])
-  (let ([pnt (object.PointToShaderSpace intersect-point)]
+  (let ([pnt (point->surface object intersect-point)]
         [Nf (faceforward (vec-normalize normal) incoming)])
-    (let* ([t (pnt-y pnt)]
+    (let* ([t (vec-j pnt)]
            [tmod (fmod (* t frequency) 1)])
       (color-color-mul
        (if (< tmod .5)
@@ -57,4 +56,31 @@
            blackcolor)
        (color-color-plus
         (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf]) Kd)))))))
+        (color-num-mul ((diffuse [N Nf])) Kd))))))
+
+(define-shader checker ([Kd 1] [Ka .5] [frequency 4]
+                        [blackcolor (make-color 0 0 0)])
+  (let ([pnt (point->surface object intersect-point)]
+        [Nf (faceforward (vec-normalize normal) incoming)])
+    (let ([xmod (fmod (* (vec-i pnt) frequency) (+ 1 EPSILON))]
+          [ymod (fmod (* (vec-j pnt) frequency) (+ 1 EPSILON))]
+          [zmod (fmod (* (vec-k pnt) frequency) (+ 1 EPSILON))])
+      (color-color-mul
+       (if (< zmod .5)
+           (if (< xmod .5)
+               (if (< ymod .5)
+                   (object-color object)
+                   blackcolor)
+               (if (< ymod .5)
+                   blackcolor
+                   (object-color object)))
+           (if (< xmod .5)
+               (if (< ymod .5)
+                   blackcolor
+                   (object-color object))             
+               (if (< ymod .5)
+                   (object-color object)
+                   blackcolor)))
+       (color-color-plus
+        (color-num-mul ((ambient)) Ka)
+        (color-num-mul ((diffuse [N Nf])) Kd))))))

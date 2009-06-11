@@ -304,7 +304,9 @@
    `(("matte" . (matte))
      ("metal" . (metal))
      ("shiny-metal" . (shiny-metal))
-     ("plastic" . (plastic))))
+     ("plastic" . (plastic))
+     ("stripes" . (stripes))
+     ("checker" . (checker))))
   )
 
 

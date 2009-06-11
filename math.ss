@@ -10,6 +10,11 @@
 
 (define (sqr x) (* x x))
 
+(define (fmod n modulus)          ; modulus must be positive (for now)
+  (if (negative? n)
+      (do ([n n (+ n modulus)]) ((positive? n) n))
+      (do ([n n (- n modulus)]) ((negative? n) (+ n modulus)))))
+
 (define (make-linear-transform in-min in-max out-min out-max)
   (let ([delta (/ (- out-max out-min) (- in-max in-min))])
     (lambda (x)

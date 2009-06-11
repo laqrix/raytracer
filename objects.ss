@@ -11,46 +11,6 @@
 (define-scheme-record quadric object ((immutable coefficients)))
 (define-scheme-record polyhedron object ((immutable planes)))
 
-;; User interface
-
-(define-defaults sphere ([color (make-color 1 1 1)] [shader #f]
-                         [center (make-vec 0 0 0)] [radius 1]
-                         [M (matrix-identity 3)])
-  (let ([M (matrix-mul (scale radius radius radius) M)])
-    (make-sphere color shader center M (matrix-inverse M))))
-
-(define-defaults plane ([color (make-color 1 1 1)] [shader #f]
-                        [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-plane color shader center M (matrix-inverse M)))
-
-(define-defaults cube ([color (make-color 1 1 1)] [shader #f]
-                       [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
-    (list
-     (make-vec 0 0 1) (make-vec 0 0 -1)
-     (make-vec 0 1 0) (make-vec 0 -1 0)
-     (make-vec 1 0 0) (make-vec -1 0 0))))
-
-(define-defaults tetrahedron ([color (make-color 1 1 1)] [shader #f]
-                              [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
-    (list
-     (make-vec -1 -1 -1)
-     (make-vec -1 1 1)
-     (make-vec 1 1 -1)
-     (make-vec 1 -1 1))))
-
-(define-defaults quadric ([color (make-color 1 1 1)] [shader #f]
-                          [center (make-vec 0 0 0)] [M (matrix-identity 3)]
-                          [coefficients #f])
-  (unless (vector? coefficients)
-    (error 'quadric "coefficients are not a vector: ~s" coefficients))
-  (unless (= (vector-length coefficients) 10)
-    (error 'quadric "incorrect number of coefficients: ~s" coefficients))
-  (make-quadric color shader center M (matrix-inverse M) coefficients))
-
-;; Internal interface
-
 (define (object-intersections object ray)
   ((cond
     [(sphere? object) sphere-intersections]
@@ -68,6 +28,14 @@
     [(quadric? object) quadric-normal]
     [else (error 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
+
+(define (point->surface object point)
+  ;; Maps intersect point to surface shader coordinate space
+  (cond
+   [(plane? object) (plane-point->surface object point)]
+   [else
+    (mat-vec-mul (object-Mi object)
+      (vec-vec-sub intersect-point (object-center object)))]))
 
 (define (sphere-intersections object ray)
   (let ([origin (mat-vec-mul (object-Mi object)
@@ -103,6 +71,14 @@
 
 (define (plane-normal object extra intersect-point)
   (mat-vec-mul (object-M object) (make-vec 0 0 1)))
+
+(define (plane-point->surface object point)
+  (vec-num-mul
+   (vec-num-plus 
+    (mat-vec-mul (object-Mi object)
+      (vec-vec-sub point (object-center object)))
+    1)
+   0.5))
 
 (define (polyhedron-intersections obj ray)
   (let ([origin (mat-vec-mul (object-Mi obj)

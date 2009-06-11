@@ -23,8 +23,6 @@ Things to do:
   - "uber" light
 
 - Shader "library"
-  - stripes
-  - checker
   - marble
   - wood
   - mirror
