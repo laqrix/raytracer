@@ -63,27 +63,78 @@
           (let* ([low (read8)]
                  [high (read8)])
             (+ (ash high 8) low)))
+        (define (read-rgb pixel-depth)
+          (let* ([b (as-float (read8))]
+                 [g (as-float (read8))]
+                 [r (as-float (read8))])
+            (when (= pixel-depth 32)    ; attribute byte
+              (read8))
+            (make-color r g b)))
         (define (assert x expect msg)
           (unless (equal? x expect)
             (error #f "~a: ~a but expected ~a" msg x expect)))
         ;; Header
         (assert (read8) 0 "ID Length")
         (assert (read8) 0 "Color Map Type")
-        (assert (read8) 2 "Image Type: Uncompressed True-color")
-        (do ([i 0 (+ i 1)]) ((= i 5))
-          (assert (read8) 0 "Color Map Specification"))
-        (let* ([xo (read16)]
-               [yo (read16)]
-               [width (read16)]
-               [height (read16)])
-          (assert (read8) 24 "Pixel Depth; bits per pixel")
-          (assert (read8) 0 "Image Descriptor")
-          ;; Data
-          (make-image width height xo yo
-            (lambda (set-pixel)
-              (do ([y 0 (+ y 1)]) ((= y height))
-                (do ([x 0 (+ x 1)]) ((= x width))
-                  (let* ([b (as-float (read8))]
-                         [g (as-float (read8))]
-                         [r (as-float (read8))])
-                    (set-pixel x y (make-color r g b))))))))))))
+        (let ([image-type (read8)])     ; 2 or 10
+          (unless (or (= image-type 2) (= image-type 10))
+            (error #f "Image Type: ~a but expected 2 or 10" image-type))
+          (do ([i 0 (+ i 1)]) ((= i 5))
+            (assert (read8) 0 "Color Map Specification"))
+          (let* ([xo (read16)]
+                 [yo (read16)]
+                 [width (read16)]
+                 [height (read16)])
+            (let ([pixel-depth (read8)]) ; 24 or 32
+              (unless (or (= pixel-depth 24) (= pixel-depth 32))
+                (error #f "Pixel Depth: ~a but expected 24 or 32" pixel-depth))
+              (let ([image-descriptor (read8)])
+                (unless (or (= image-descriptor 0) (= image-descriptor 32))
+                  (error #f "Image Descriptor: ~a but expected 0 or 32"
+                    image-descriptor))
+                ;; Data
+                (cond
+                 [(= image-type 2)      ; Uncompressed
+                  (assert image-descriptor 0 "Image Descriptor")
+                  (make-image width height xo yo
+                    (lambda (set-pixel)
+                      (do ([y 0 (+ y 1)]) ((= y height))
+                        (do ([x 0 (+ x 1)]) ((= x width))
+                          (set-pixel x y (read-rgb pixel-depth))))))]
+                 [(= image-type 10)     ; Run length encoded
+                  (<image> make
+                    [width width] [height height]
+                    [x-origin xo] [y-origin yo]
+                    [pixels
+                     (let* ([size (fx* width height)]
+                            [store (make-vector size #f)])
+                       (let lp ([i 0])
+                         (if (= i size)
+                             (cond
+                              [(= image-descriptor 0) store]
+                              [(= image-descriptor 32) ; flip vertically
+                               (let ()
+                                 (define (index i j)
+                                   (fx+ (fx* j width) i))
+                                 (do ([y 0 (+ y 1)]) ((= y (/ height 2)))
+                                   (do ([x 0 (+ x 1)]) ((= x width))
+                                     (let* ([i1 (index x y)]
+                                            [i2 (index x (- height y 1))]
+                                            [c1 (vector-ref store i1)]
+                                            [c2 (vector-ref store i2)])
+                                       (vector-set! store i1 c2)
+                                       (vector-set! store i2 c1))))
+                                 store)])
+                             (lp (let* ([packet (read8)]
+                                        [run-length? (fxlogbit? 7 packet)]
+                                        [length (+ (fxlogbit0 7 packet) 1)])
+                                   (if run-length?
+                                       (let ([color (read-rgb pixel-depth)])
+                                         (do ([j 0 (+ j 1)]
+                                              [i i (+ i 1)])
+                                             ((= j length) i)
+                                           (vector-set! store i color)))
+                                       (do ([j 0 (+ j 1)]
+                                            [i i (+ i 1)])
+                                           ((= j length) i)
+                                         (vector-set! store i (read-rgb pixel-depth)))))))))])])))))))))
