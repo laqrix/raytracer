@@ -23,10 +23,6 @@ Things to do:
   - "uber" light
 
 - Shader "library"
-  - matte
-  - metal
-  - shiny metal
-  - plastic
   - stripes
   - checker
   - marble

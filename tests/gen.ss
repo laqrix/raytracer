@@ -1,237 +1,214 @@
 (case-sensitive #t)
 
-(define targets (open-output-file ".src" 'replace))
-(fprintf targets "src :=")
+(define sources '())
+(define groups (make-eq-hashtable))
 
-(define ($build filename exprs)
-  (let* ([filename (string-append filename ".scene")]
+(define current-group (make-parameter #f))
+
+(define (write-sources)
+  (let ([op (open-output-file ".src" 'replace)])
+    (fprintf op "src :=")
+    (for-each
+     (lambda (s) (fprintf op " ~a" s))
+     sources)
+    (fprintf op "\n\n")
+    (let-values ([(keys vals) (hashtable-entries groups)])
+      (vector-for-each
+       (lambda (group files)
+         (fprintf op "~a:" group)
+         (for-each
+          (lambda (file) (fprintf op " ~a" file))
+          files)
+         (fprintf op "\n\n"))
+       keys vals))))
+
+(define ($build basename exprs)
+  (let* ([filename (string-append basename ".scene")]
          [op (open-output-file filename 'replace)])
     (fprintf op ";; Automatically Generated -- Do not edit\n\n")
+    (pretty-print `(load "../user-shaders.ss") op)
+    (fprintf op "\n")
     (for-each
      (lambda (expr)
        (pretty-print expr op)
        (fprintf op "\n"))
      exprs)
     (close-port op)
-    (fprintf targets " ~a" filename)))
+    ;; capture filename and group
+    (set! sources (cons filename sources))
+    (let ([group (current-group)])
+      (when group
+        (hashtable-set! groups group
+          (cons (string-append basename ".tga")
+            (hashtable-ref groups group '())))))))
 
 (define-syntax build
   (syntax-rules ()
     [(_ filename expr ...)
      ($build filename '(expr ...))]))
 
-(build "ambient-light"
-  (define-shader plain ([Ka 1])
-    (color-color-mul
-     (object-color object)
-     (color-num-mul ((ambient)) Ka)))
-  (render image-simple "ambient-light" 128 128 
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (sphere [center (make-vec 0 0 0)]
-                [radius 1]
-                [shader (plain)]
-                [color (make-color 1 1 1)]))]
-      [lights
-       (list
-        (ambient-light [color (make-color 1 1 1)]
-                       [intensity 1]))])))
+(define-syntax group
+  (syntax-rules ()
+    [(_ name expr ...)
+     (parameterize ([current-group 'name])
+       expr ...)]))
 
-(build "distant-light"
-  (define-shader matte ([Ka 1] [Kd 1])
-    (let ([Nf (faceforward (vec-normalize normal) incoming)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "distant-light" 128 128
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (sphere [center (make-vec 0 0 0)]
-                [radius 1]
-                [shader (matte)]
-                [color (make-color 1 1 1)]))]
-      [lights
-       (list
-        (distant-light [position (make-vec -10 10 10)]
-                     [color (make-color 1 1 1)]
-                     [intensity 1]))])))
+(group lights
+  (build "light-ambient"
+    (render image-simple "light-ambient" 128 128 
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (sphere [center (make-vec 0 0 0)]
+            [radius 1]
+            [shader (matte)]
+            [color (make-color 1 1 1)]))]
+        [lights
+         (list
+          (ambient-light [color (make-color 1 1 1)]
+            [intensity 1]))])))
+  
+  (build "light-distant"
+    (render image-simple "light-distant" 128 128
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (sphere [center (make-vec 0 0 0)]
+            [radius 1]
+            [shader (matte)]
+            [color (make-color 1 1 1)]))]
+        [lights
+         (list
+          (distant-light [position (make-vec -10 10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 1]))])))
 
-(build "point-light"
-  (define-shader matte ([Ka 1] [Kd 1])
-    (let ([Nf (faceforward (vec-normalize normal) incoming)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "point-light" 128 128
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (sphere [center (make-vec 0 0 0)]
-                [radius 1]
-                [shader (matte)]
-                [color (make-color 1 1 1)]))]
-      [lights
-       (list
-        (point-light [position (make-vec -10 10 10)]
-                     [color (make-color 1 1 1)]
-                     [intensity 100]))])))
+  (build "light-point"
+    (render image-simple "light-point" 128 128
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (sphere [center (make-vec 0 0 0)]
+            [radius 1]
+            [shader (matte)]
+            [color (make-color 1 1 1)]))]
+        [lights
+         (list
+          (point-light [position (make-vec -10 10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 100]))])))
+  )
 
-(build "plane"
-  (define-shader matte ([Ka 1] [Kd 1])
-    (let ([Nf (faceforward (vec-normalize normal) incoming)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "plane" 128 128
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (plane [color (make-color 0 1 0)] [shader (matte)]))]
-      [lights
-       (list
-        (distant-light [position (make-vec -10 10 10)]
-          [color (make-color 1 1 1)]
-          [intensity 1]))])))
+(group objects
+  (build "plane"
+    (render image-simple "plane" 128 128
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (plane [color (make-color 0 1 0)] [shader (matte)]))]
+        [lights
+         (list
+          (distant-light [position (make-vec -10 10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 1]))])))
 
-(build "cube"
-  (define-shader matte ([Ka 1] [Kd 1])
-    (let ([Nf (faceforward (vec-normalize normal) incoming)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "cube" 128 128
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (cube [color (make-color 0 1 0)] [shader (matte)]
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]))]
-      [lights
-       (list
-        (distant-light [position (make-vec -10 10 10)]
-          [color (make-color 1 1 1)]
-          [intensity 1]))])))
+  (build "cube"
+    (render image-simple "cube" 128 128
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (cube [color (make-color 0 1 0)] [shader (matte)]
+            [M (matrix-mul (rotate-x 15) (rotate-y 80))]))]
+        [lights
+         (list
+          (distant-light [position (make-vec -10 10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 1]))])))
 
-(build "tetrahedron"
-  (define-shader matte ([Ka 1] [Kd 1])
-    (let ([Nf (faceforward (vec-normalize normal) incoming)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))))
-  (render image-simple "tetrahedron" 128 128
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-    (<scene> make
-      [background-color (make-color 0 .3 .3)]
-      [objects
-       (list
-        (tetrahedron [color (make-color 0 1 0)] [shader (matte)]
-          [M (matrix-mul (rotate-x -45) (rotate-z 45))]
-          ))]
-      [lights
-       (list
-        (distant-light [position (make-vec -10 10 10)]
-          [color (make-color 1 1 1)]
-          [intensity 1])
-        (distant-light [position (make-vec 10 -10 10)]
-          [color (make-color 1 1 1)]
-          [intensity 1/2]))])))
+  (build "tetrahedron"
+    (render image-simple "tetrahedron" 128 128
+      (<camera> make
+        [translation (make-vec 0 0 10)]
+        [target (make-vec 0 0 0)]
+        [distance 1]
+        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+      (<scene> make
+        [background-color (make-color 0 .3 .3)]
+        [objects
+         (list
+          (tetrahedron [color (make-color 0 1 0)] [shader (matte)]
+            [M (matrix-mul (rotate-x -45) (rotate-z 45))]
+            ))]
+        [lights
+         (list
+          (distant-light [position (make-vec -10 10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 1])
+          (distant-light [position (make-vec 10 -10 10)]
+            [color (make-color 1 1 1)]
+            [intensity 1/2]))])))
 
-(for-each
- (lambda (p)
-   (let ([name (string-append "quadric-" (car p))]
-         [coef (cdr p)])
-     ($build name
-       `((define-shader matte ([Ka 1] [Kd 1])
-           (let ([Nf (faceforward (vec-normalize normal) incoming)])
-             (color-color-mul
-              (object-color object)
-              (color-color-plus
-               (color-num-mul ((ambient)) Ka)
-               (color-num-mul ((diffuse [N Nf])) Kd)))))
-         (render image-simple ,name 128 128
-           (<camera> make
-             [translation (make-vec 0 0 10)]
-             [target (make-vec 0 0 0)]
-             [distance 1]
-             [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-           (<scene> make
-             [background-color (make-color 0 .3 .3)]
-             [objects
-              (list
-               (quadric [color (make-color 0 1 0)] [shader (matte)]
-                 [coefficients ,coef]
-                 [M (matrix-mul (rotate-x -90) (rotate-y 10))]
-                 ))]
-             [lights
-              (list
-               (distant-light [position (make-vec -1 1 10)]
-                 [color (make-color 1 1 1)]
-                 [intensity 1]))]))))))
- '(("sphere" . #(1 1 1 0 0 0 0 0 0 -1))
-   ("cylinder" . #(1 1 0 0 0 0 0 0 0 -1))
-   ("cone" . #(1 1 -1 0 0 0 0 0 0 0))
-   ("hyperboloid" . #(1 1 -1 0 0 0 0 0 0 -1))))
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "quadric-" (car p))]
+           [coef (cdr p)])
+       ($build name
+         `((render image-simple ,name 128 128
+             (<camera> make
+               [translation (make-vec 0 0 10)]
+               [target (make-vec 0 0 0)]
+               [distance 1]
+               [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+             (<scene> make
+               [background-color (make-color 0 .3 .3)]
+               [objects
+                (list
+                 (quadric [color (make-color 0 1 0)] [shader (matte)]
+                   [coefficients ,coef]
+                   [M (matrix-mul (rotate-x -90) (rotate-y 10))]
+                   ))]
+               [lights
+                (list
+                 (distant-light [position (make-vec -1 1 10)]
+                   [color (make-color 1 1 1)]
+                   [intensity 1]))]))))))
+   '(("sphere" . #(1 1 1 0 0 0 0 0 0 -1))
+     ("cylinder" . #(1 1 0 0 0 0 0 0 0 -1))
+     ("cone" . #(1 1 -1 0 0 0 0 0 0 0))
+     ("hyperboloid" . #(1 1 -1 0 0 0 0 0 0 -1))))
+  )
 
 (build "spheres"
-  (define-shader shiny ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
-    (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-           [IN (vec-normalize incoming)]
-           [V (vec-reverse IN)]
-           [R (reflect IN Nf)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-color-plus
-         (color-color-plus
-          (color-num-mul ((ambient)) Ka)
-          (color-num-mul ((diffuse [N Nf])) Kd))
-         (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))
-        (sample-environment scene intersect-point R Kr depth)))))
   (render image-simple "spheres" 128 128
     (<camera> make
       [translation (make-vec 0 0 10)]
@@ -244,15 +221,15 @@
        (list
         (sphere [center (make-vec -1 .8 0)]
                 [radius 1]
-                [shader (shiny [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
+                [shader (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
                 [color (make-color 1 1 0)])
         (sphere [center (make-vec 1 .8 0)]
                 [radius 1]
-                [shader (shiny [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
+                [shader (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
                 [color (make-color 0 1 1)])
         (sphere [center (make-vec 0 -1 0)]
                 [radius 1]
-                [shader (shiny [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
+                [shader (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
                 [color (make-color 1 0 1)]))]
       [lights
        (list
@@ -264,20 +241,6 @@
                      [intensity 10]))])))
 
 (build "metal-ball"
-  (define-shader shiny ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
-    (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-           [IN (vec-normalize incoming)]
-           [V (vec-reverse IN)]
-           [R (reflect IN Nf)])
-      (color-color-mul
-       (object-color object)
-       (color-color-plus
-        (color-color-plus
-         (color-color-plus
-          (color-num-mul ((ambient)) Ka)
-          (color-num-mul ((diffuse [N Nf])) Kd))
-         (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))
-        (sample-environment scene intersect-point R Kr depth)))))
   (render image-simple "metal-ball" 128 128
     (<camera> make (translation (make-vec 0 0 10))
       (target (make-vec 0 0 0)) (distance 1)
@@ -291,10 +254,10 @@
              [center (make-vec 0 -1 0)]
              [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
              (color (make-color 0 .6 0))
-             (shader (shiny [Kr 0])))
+             (shader (shiny-metal [Kr 0])))
         (sphere
          (color (make-color .5 .5 .5))
-         (shader (shiny [Kr 1])))))
+         (shader (shiny-metal [Kr 1])))))
      (lights
       (list
        (distant-light
@@ -306,4 +269,44 @@
         (color (make-color 1 1 1))
         (intensity 1)))))))
 
+(group shaders
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "shader-" (car p))]
+           [expr (cdr p)])
+       ($build name
+         `((render image-simple ,name 128 128
+             (<camera> make (translation (make-vec 0 0 10))
+               (target (make-vec 0 0 0))
+               (distance 1)
+               (view (<view> make (left -3.5) (right 3.5) (bottom -3.5) (top 3.5))))
+             (<scene>
+              make
+              [background-color (make-color 0 .3 .3)]
+              [objects
+               (list
+                (sphere [color (make-color 0 .8 0)]
+                  [shader ,expr]
+                  [M (scale 2 2 2)])
+                (plane [center (make-vec 0 -3 0)]
+                  [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
+                  [shader (matte)])
+                #;(plane [center (make-vec -3 0 0)]
+                [M (matrix-mul (scale 9 9 9) (rotate-y 90))]
+                [shader (matte)])
+                #;(plane [center (make-vec 0 0 -3)]
+                [M (matrix-mul (scale 9 9 9))]
+                [shader (matte)]))]
+              [lights
+               (list
+                (ambient-light [intensity 0.1])
+                (distant-light [position (make-vec 5 5 10)]))]))))))
+   `(("matte" . (matte))
+     ("metal" . (metal))
+     ("shiny-metal" . (shiny-metal))
+     ("plastic" . (plastic))))
+  )
+
+
+(write-sources)
 (exit)
