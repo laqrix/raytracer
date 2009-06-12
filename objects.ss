@@ -37,6 +37,13 @@
     (mat-vec-mul (object-Mi object)
       (vec-vec-sub intersect-point (object-center object)))]))
 
+(define (point->texture object point)
+  ;; Maps point from surface shader coordinates to texture coordinates
+  (cond
+   [(sphere? object) (sphere-point->texture object point)]
+   [(plane? object) (plane-point->texture object point)]
+   [else (error 'point->texture "unknown object type: ~s" object)]))
+
 (define (sphere-intersections object ray)
   (let ([origin (mat-vec-mul (object-Mi object)
                   (vec-vec-sub (<ray> origin ray) (object-center object)))]
@@ -57,6 +64,28 @@
 (define (sphere-normal object extra intersect-point)
   (mat-vec-mul (object-M object)
     (vec-vec-sub intersect-point (object-center object))))
+
+(define (sphere-point->texture object point)
+  (let* ([pnt (vec-normalize point)]
+         [x (vec-i pnt)]
+         [y (vec-j pnt)]
+         [z (vec-k pnt)]
+         [phi (+ 0.5 (/ (asin y) pi))]  ; [0-1]
+         [xz-len (sqrt (+ (sqr x) (sqr z)))]
+         [theta 0])
+    (if (= 0 xz-len)
+        (set! theta 0)
+        (begin
+          (if (= 0 z)
+              (if (> x 0)
+                  (set! theta 0)
+                  (set! theta pi))
+              (begin
+                (set! theta (acos (/ x xz-len)))
+                (when (< z 0)
+                  (set! theta (- (* 2 pi) theta)))))
+          (set! theta (/ theta (* 2 pi))))) ; [0-1]
+    (make-vec theta phi 0)))
 
 (define (plane-intersections object ray)
   (let ([origin (mat-vec-mul (object-Mi object)
@@ -79,6 +108,9 @@
       (vec-vec-sub point (object-center object)))
     1)
    0.5))
+
+(define (plane-point->texture object point)
+  (make-vec (fmod (vec-i point) 1) (fmod (vec-j point) 1) 0))
 
 (define (polyhedron-intersections obj ray)
   (let ([origin (mat-vec-mul (object-Mi obj)

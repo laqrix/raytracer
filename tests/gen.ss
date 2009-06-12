@@ -309,6 +309,45 @@
      ("checker" . (checker))))
   )
 
+(group textures
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "texture-" (car p))]
+           [expr (cdr p)])
+       ($build name
+         `((render image-simple ,name 128 128
+             (<camera> make (translation (make-vec 0 0 10))
+               (target (make-vec 0 0 0))
+               (distance 1)
+               (view (<view> make (left -3.5) (right 3.5) (bottom -3.5) (top 3.5))))
+             (<scene>
+              make
+              [background-color (make-color 0 .3 .3)]
+              [objects
+               (list
+                ,expr
+                (plane [center (make-vec 0 -3 0)]
+                  [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
+                  [shader (matte)])
+                #;(plane [center (make-vec -3 0 0)]
+                [M (matrix-mul (scale 9 9 9) (rotate-y 90))]
+                [shader (matte)])
+                #;(plane [center (make-vec 0 0 -3)]
+                [M (matrix-mul (scale 9 9 9))]
+                [shader (matte)]))]
+              [lights
+               (list
+                (ambient-light [intensity 0.1])
+                (distant-light [position (make-vec 5 5 10)]))]))))))
+   `(("plane" .
+      (plane [M (scale 3 3 3)]
+        [shader (simple-texmap
+                 [texture (texture [filename "test-texture"])])]))
+     ("sphere" .
+      (sphere [M (scale 2 2 2)]
+        [shader (simple-texmap
+                 [texture (texture [filename "test-texture"])])]))))
+  )
 
 (write-sources)
 (exit)

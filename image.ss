@@ -18,6 +18,17 @@
              [y-origin y-origin]
              [pixels store])))
 
+(define (image-index img i j)
+  (let ([width (<image> width img)]
+        [height (<image> height img)])
+    (unless (and (fx<= 0 i (- width 1)) (fx<= 0 j (- height 1)))
+      (error #f "image index (~a, ~a) out of bounds (~a, ~a)"
+        i j (- width 1) (- height 1)))
+    (fx+ (fx* j width) i)))
+
+(define (image-ref img i j)
+  (vector-ref (<image> pixels img) (image-index img i j)))
+
 (define (as-byte x)
   (exact (min (truncate (* (max 0 x) 255)) 255)))
 

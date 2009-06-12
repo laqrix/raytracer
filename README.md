@@ -28,7 +28,6 @@ Things to do:
   - mirror
   - glass
   - granite
-  - texture
 
 - Constructive Solid Geometry
   - union
