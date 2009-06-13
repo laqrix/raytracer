@@ -32,9 +32,6 @@
 (define (as-byte x)
   (exact (min (truncate (* (max 0 x) 255)) 255)))
 
-(define (as-float x)
-  (inexact (/ x 255)))
-
 (define (write-tga image filename)
   (let* ([filename (string-append filename ".tga")]
          [op (open-output-file filename 'replace)])
@@ -65,16 +62,18 @@
     (close-port op)))
 
 (define (read-texture-file filename)
+  ;; Colors are stored in the range [0, 255] but are represented [0, 1]
+  (define t (make-linear-transform 0 255 0.0 1.0))
   (read-tga filename
     (lambda (r g b a)
-      (make-color (as-float r) (as-float g) (as-float b)))))
+      (make-color (t r) (t g) (t b)))))
 
 (define (read-normals-file filename)
-  ;; Normals are stored in the range [0, 1] but represent [-1, 1]
-  (define t (make-linear-transform 0 1 -1 1))
+  ;; Normals are stored in the range [0, 255] but represent [-1, 1]
+  (define t (make-linear-transform 0 255 -1.0 1.0))
   (read-tga filename
     (lambda (r g b a)
-      (make-vec (as-float (t r)) (as-float (t g)) (as-float (t b))))))
+      (make-vec (t r) (t g) (t b)))))
 
 (define (read-tga filename proc)
   (define-syntax assert
