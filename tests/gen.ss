@@ -307,7 +307,8 @@
      ("plastic" . (plastic))
      ("stripes" . (stripes))
      ("checker" . (checker))
-     ("mirror" . (mirror))))
+     ("mirror" . (mirror))
+     ("marble" . (marble))))
   )
 
 (group textures

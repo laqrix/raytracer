@@ -10,7 +10,7 @@
 
 (define (sqr x) (* x x))
 
-(define (fmod n modulus)          ; modulus must be positive (for now)
+(define (fmod n modulus)
   (if (negative? n)
       (do ([n n (+ n modulus)]) ((positive? n) n))
       (do ([n n (- n modulus)]) ((negative? n) (+ n modulus)))))
@@ -138,3 +138,60 @@
           (set 2 1 sa)
           (set 2 2 ca)
           (set 3 3 1))))))
+
+;; Thresholding
+
+(define (step edge x)
+  (if (< x edge)
+      0
+      1))
+
+(define (smoothstep edge0 edge1 x)
+  (cond
+   [(< x edge0) 0]
+   [(>= x edge1) 1]
+   [else
+    ;; smooth Hermite interpolation
+    (let ([t (/ (- t edge0) (- edge1 edge0))])
+      (+ (* -2 t t t) (* 3 t t)))]))
+
+(define (pulse edge0 edge1 x)
+  (- (step edge0 x) (step edge1 x)))
+
+(define (pulsetrain edge period x)
+  (pulse edge period (fmod x period)))
+
+(define (smoothpulse e0 e1 e2 e3 x)
+  (- (smoothstep e0 e1 x) (smoothstep e2 e3 x)))
+
+(define (smoothpulsetrain e0 e1 e2 e3 period x)
+  (smoothpulse e0 e1 e2 e3 (fmod x period)))
+
+;; Splines
+
+(define (catmull-rom x p1 p2 p3 p4)
+  (/ (+ (* (+ (- p1) (* 3 p2) (* -3 p3) p4) x x x)
+        (* (+ (* 2 p1) (* -5 p2) (* 4 p3) (- p4)) x x)
+        (* (+ (- p1) p3) x)
+        (* 2 p2))
+     2))
+
+(define (spline-helper x ls)
+  (if (<= x 1.0)
+      (match ls [(,p1 ,p2 ,p3 ,p4 . ,_) (catmull-rom x p1 p2 p3 p4)])
+      (spline-helper (- x 1) (cdr ls))))
+      
+(define (spline x ls)
+  (let ([edges (- (length ls) 3)])
+    (when (< edges 1)
+      (error 'spline "not enough edges to spline points"))
+    (spline-helper (* x edges) ls)))
+
+(define (make-spline ls)
+  (let ([edges (- (length ls) 3)])
+    (when (< edges 1)
+      (error 'spline "not enough edges to spline points"))
+    (lambda (x)
+      (when (or (< x 0.0) (> x 1.0))
+        (error 'spline "param is out of range: ~a" x))
+      (spline-helper (* x edges) ls))))

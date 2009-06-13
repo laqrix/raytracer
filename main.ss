@@ -6,6 +6,7 @@
 (include "defaults.ss")
 (include "math.ss")
 (include "color.ss")
+(include "noise.ss")
 
 (define EPSILON 0.0005)
 (define MAXDEPTH 5)

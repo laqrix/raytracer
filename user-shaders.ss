@@ -119,3 +119,38 @@
      (color-color-mul 
       (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
       specularcolor))))
+
+(define-shader marble
+  ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor (make-color 1 1 1)]
+   [octaves 6] [lacunarity 2] [gain .5]
+   [colorlist 
+    (list 
+     (make-color .71 .71 1.0)          ; pale blue
+     (make-color .71 .71 1.0)          ; pale blue
+     (make-color .57 .57 .86)          ; medium blue
+     (make-color .57 .57 .86)          ; medium blue
+     (make-color .57 .57 .86)          ; medium blue
+     (make-color .71 .71 1.0)          ; pale blue
+     (make-color .71 .71 1.0)          ; pale blue
+     (make-color .43 .43 .74)          ; medium dark blue
+     (make-color .43 .43 .74)          ; medium dark blue
+     (make-color .29 .29 .57)          ; dark blue
+     (make-color .29 .29 .57)          ; dark blue
+     (make-color .71 .71 1.0)          ; pale blue
+     (make-color .29 .29 .57)          ; dark blue
+     )])
+  (let* ([pnt (point->surface object intersect-point)]
+         [Nf (faceforward (vec-normalize normal) incoming)]
+         [IN (vec-normalize incoming)]
+         [V (vec-reverse IN)]
+         [color (color-spline
+                 (abs (sin (vec-i (vec-num-plus pnt
+                                    (turbulence pnt octaves lacunarity gain)))))
+                  colorlist)])
+    (color-color-plus
+     (color-color-mul
+      color
+      (color-color-plus
+       (color-num-mul ((ambient)) Ka)
+       (color-num-mul ((diffuse [N Nf])) Kd)))
+     (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))))

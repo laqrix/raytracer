@@ -23,7 +23,6 @@ Things to do:
   - "uber" light
 
 - Shader "library"
-  - marble
   - wood
   - glass
   - granite

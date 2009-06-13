@@ -30,3 +30,20 @@
   (color-color-plus
    (color-num-mul c1 (- 1 x))
    (color-num-mul c2 x)))
+
+(define (color-catmull-rom x p1 p2 p3 p4)
+  (make-color
+   (catmull-rom x (<color> r p1) (<color> r p2) (<color> r p3) (<color> r p4))
+   (catmull-rom x (<color> g p1) (<color> g p2) (<color> g p3) (<color> g p4))
+   (catmull-rom x (<color> b p1) (<color> b p2) (<color> b p3) (<color> b p4))))
+
+(define (color-spline-helper x ls)
+  (if (<= x 1.0)
+      (match ls [(,p1 ,p2 ,p3 ,p4 . ,_) (color-catmull-rom x p1 p2 p3 p4)])
+      (color-spline-helper (- x 1) (cdr ls))))
+
+(define (color-spline x ls)
+  (let ([edges (- (length ls) 3)])
+    (when (< edges 1)
+      (error 'color-spline "not enough edges to spline colors"))
+    (color-spline-helper (* x edges) ls)))
