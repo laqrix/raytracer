@@ -87,21 +87,23 @@
 
 (define-shader simple-texmap
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor (make-color 1 1 1)]
-   [texture #f] [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let ([Nf (faceforward (vec-normalize normal) incoming)]
-        [V  (vec-normalize (vec-reverse incoming))])
+   [texture #f] [normals #f]
+   [sstart 0] [sscale 1] [tstart 0] [tscale 1])
+  (let* ([st (point->texture object
+               (point->surface object intersect-point))]
+         [ss (/ (- (vec-i st) sstart) sscale)]
+         [tt (/ (- (vec-j st) tstart) tscale)]
+         [N (if normals
+                (vec-vec-sub normal (normals ss tt))
+                normal)]
+         [Nf (faceforward (vec-normalize N) incoming)]
+         [V  (vec-normalize (vec-reverse incoming))])
     (color-color-plus
      (color-color-mul
-      (cond
-       [texture
-        (let* ([st (point->texture object
-                    (point->surface object intersect-point))]
-               [ss (/ (- (vec-i st) sstart) sscale)]
-               [tt (/ (- (vec-j st) tstart) tscale)])
+      (if texture
           ;; May also want to use opacity from the texture file here
-          (texture ss tt))]
-       [else
-        (object-color object)])
+          (texture ss tt)
+          (object-color object))
       (color-color-plus
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((diffuse [N Nf])) Kd)))
