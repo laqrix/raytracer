@@ -25,7 +25,6 @@ Things to do:
 - Shader "library"
   - marble
   - wood
-  - mirror
   - glass
   - granite
 

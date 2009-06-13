@@ -85,6 +85,15 @@
         (color-num-mul ((ambient)) Ka)
         (color-num-mul ((diffuse [N Nf])) Kd))))))
 
+(define-shader mirror ([Ks 1] [Kr 1] [roughness 0.05])
+  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
+         [IN (vec-normalize incoming)]
+         [V (vec-reverse IN)]
+         [R (reflect IN Nf)])
+    (color-color-plus
+     (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
+     (sample-environment scene intersect-point R Kr depth))))
+
 (define-shader simple-texmap
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor (make-color 1 1 1)]
    [texture #f] [normals #f]

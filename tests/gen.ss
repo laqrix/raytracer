@@ -306,7 +306,8 @@
      ("shiny-metal" . (shiny-metal))
      ("plastic" . (plastic))
      ("stripes" . (stripes))
-     ("checker" . (checker))))
+     ("checker" . (checker))
+     ("mirror" . (mirror))))
   )
 
 (group textures
