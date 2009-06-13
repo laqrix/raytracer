@@ -154,3 +154,22 @@
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((diffuse [N Nf])) Kd)))
      (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))))
+
+(define-shader granite ([Ka .2] [Kd .8])
+  (let ([Nf (faceforward (vec-normalize normal) incoming)]
+        [sum
+         (let lp ([i 0] [sum 0] [freq 1])
+           (if (= i 6)
+               sum
+               (lp (+ i 1)
+                 (+ sum (/ (abs (- .5 (noise (vec-num-mul incoming
+                                               (* 4 freq)))))
+                           freq))
+                 (* 2 freq))))])
+    (color-color-mul
+     (object-color object)
+     (color-num-mul
+      (color-color-plus
+       (color-num-mul ((ambient)) Ka)
+       (color-num-mul ((diffuse [N Nf])) Kd))
+      sum))))

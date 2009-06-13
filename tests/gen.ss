@@ -308,7 +308,8 @@
      ("stripes" . (stripes))
      ("checker" . (checker))
      ("mirror" . (mirror))
-     ("marble" . (marble))))
+     ("marble" . (marble))
+     ("granite" . (granite))))
   )
 
 (group textures

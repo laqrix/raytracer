@@ -25,7 +25,6 @@ Things to do:
 - Shader "library"
   - wood
   - glass
-  - granite
 
 - Constructive Solid Geometry
   - union
