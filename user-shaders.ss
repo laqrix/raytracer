@@ -173,3 +173,56 @@
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((diffuse [N Nf])) Kd))
       sum))))
+
+(define (oaktexture Pshad 
+          ringfreq ringnoise ringnoisefreq 
+          grainfreq
+          trunkwobble trunkwobblefreq
+          angularwobble angularwobblefreq
+          ringy grainy)
+  (let* ([offset (vfBm (vec-num-mul Pshad ringnoisefreq) 2 4 .5)]
+         [Pring (vec-vec-plus Pshad (vec-num-mul offset ringnoise))]
+         [Pring (vec-vec-plus Pring 
+                  (vec-num-mul 
+                   (vec-vec-mul 
+                    (vsnoise (* (vec-k Pshad) trunkwobblefreq))
+                    (make-vec 1 1 0)) 
+                   trunkwobble))]
+         [r2 (+ (sqr (vec-i Pring)) (sqr (vec-j Pring)))]
+         [r (* (sqrt r2) ringfreq)]
+         [r (+ r (* angularwobble (smoothstep 0 5 r) 
+                    (snoise (vec-num-mul  
+                             (vec-vec-mul Pring (make-vec 1 1 .1))
+                             angularwobblefreq))))]
+         [dr (filterwidth r)]
+         [r (+ r (* .5 (filteredsnoise r dr)))]
+         [inring (smoothpulsetrain .1 .55 .7 .95 1 r)])
+    (* inring ringy)))
+
+(define-shader wood
+  ([Ka 1] [Kd 1] [Ks .25]
+   [roughness .2]
+   [ringfreq 8] [ringnoise .02] [ringnoisefreq 1]
+   [grainfreq 25]
+   [trunkwobble .15] [trunkwobblefreq .025]
+   [angularwobble 1] [angularwobblefreq 1.5]
+   [lightwood (make-color .5 .2 .067)]
+   [darkwood (make-color .15 .077 .028)]
+   [ringy 1] [grainy 1])
+  (let* ([pnt (point->surface object intersect-point)]
+         [Nf (faceforward (vec-normalize normal) incoming)]
+         [IN (vec-normalize incoming)]
+         [V (vec-reverse IN)]
+         [wood (oaktexture pnt
+                 ringfreq ringnoise ringnoisefreq 
+                 grainfreq
+                 trunkwobble trunkwobblefreq
+                 angularwobble angularwobblefreq
+                 ringy grainy)])
+    (color-color-plus
+     (color-color-mul
+      (color-mix lightwood darkwood wood)
+      (color-color-plus
+       (color-num-mul ((ambient)) Ka)
+       (color-num-mul ((diffuse [N Nf])) Kd)))
+     (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))))

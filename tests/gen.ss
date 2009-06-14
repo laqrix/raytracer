@@ -309,7 +309,8 @@
      ("checker" . (checker))
      ("mirror" . (mirror))
      ("marble" . (marble))
-     ("granite" . (granite))))
+     ("granite" . (granite))
+     ("wood" . (wood))))
   )
 
 (group textures

@@ -23,7 +23,6 @@ Things to do:
   - "uber" light
 
 - Shader "library"
-  - wood
   - glass
 
 - Constructive Solid Geometry

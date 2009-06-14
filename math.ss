@@ -15,6 +15,9 @@
       (do ([n n (+ n modulus)]) ((positive? n) n))
       (do ([n n (- n modulus)]) ((negative? n) (+ n modulus)))))
 
+(define (mix-num c0 c1 x)
+  (+ (* c0 (- 1 x)) (* c1 x)))
+
 (define (make-linear-transform in-min in-max out-min out-max)
   (let ([delta (/ (- out-max out-min) (- in-max in-min))])
     (lambda (x)
@@ -47,6 +50,12 @@
     [y (- (<triple> y t1) (<triple> y t2))]
     [z (- (<triple> z t1) (<triple> z t2))]))
 
+(define (triple-triple-mul t1 t2)
+  (<triple> make
+    [x (* (<triple> x t1) (<triple> x t2))]
+    [y (* (<triple> y t1) (<triple> y t2))]
+    [z (* (<triple> z t1) (<triple> z t2))]))
+
 ;; Vector
 (define (vec? t) (<triple> is? t))
 (define (vec-i t) (<triple> x t))
@@ -57,6 +66,7 @@
 (define vec-num-mul triple-scalar-mul)
 (define vec-vec-plus triple-triple-plus)
 (define vec-vec-sub triple-triple-sub)
+(define vec-vec-mul triple-triple-mul)
 
 (define (vec-dot v1 v2)
   (+ (* (vec-i v1) (vec-i v2))
@@ -152,8 +162,8 @@
    [(>= x edge1) 1]
    [else
     ;; smooth Hermite interpolation
-    (let ([t (/ (- t edge0) (- edge1 edge0))])
-      (+ (* -2 t t t) (* 3 t t)))]))
+    (let ([x (/ (- x edge0) (- edge1 edge0))])
+      (+ (* -2 x x x) (* 3 x x)))]))
 
 (define (pulse edge0 edge1 x)
   (- (step edge0 x) (step edge1 x)))
@@ -166,6 +176,9 @@
 
 (define (smoothpulsetrain e0 e1 e2 e3 period x)
   (smoothpulse e0 e1 e2 e3 (fmod x period)))
+
+(define (fadeout g g-avg featuresize fwidth)
+  (mix-num g g-avg (smoothstep .2 .6 (/ fwidth featuresize))))
 
 ;; Splines
 

@@ -33,6 +33,9 @@
        init
        ls)]))
 
+(define (filterwidth x) 1)
+(define (filterwidthp x) 1)
+
 (define (traverse-ray ray t)
   (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
 

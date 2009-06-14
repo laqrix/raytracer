@@ -61,16 +61,22 @@
             (lerp u (grad (p (+ AB 1)) x (- y 1) (- z 1))
               (grad (p (+ BB 1)) (- x 1) (- y 1) (- z 1)))))))))
 
-(define (noise v)
+(define (noise x)
   ;; Range [0, 1]
-  (+ 0.5 (perlin-noise (vec-i v) (vec-j v) (vec-k v))))
+  (+ 0.5
+     (if (vec? x)
+         (perlin-noise (vec-i x) (vec-j x) (vec-k x))
+         (perlin-noise x 0 0))))
 
-(define (snoise v)
+(define (snoise x)
   ;; Range [-1, 1]
-  (- (* 2 (noise v)) 1))
+  (- (* 2 (noise x)) 1))
 
-(define (vsnoise v)
-  (let ([n (snoise v)])
+(define (filteredsnoise x w)
+  (fadeout (snoise x) 0 1 w))
+
+(define (vsnoise x)
+  (let ([n (snoise x)])
     (make-vec n n n)))
 
 ;; Fractional Brownian Motion and Turbulance
@@ -85,7 +91,7 @@
           (vec-num-mul pp lacunarity)))))
 
 (define (vfBm p octaves lacunarity gain)
-  (let lp ([i 0] [sum (build-vec 0 0 0)] [amp 1] [pp p])
+  (let lp ([i 0] [sum (make-vec 0 0 0)] [amp 1] [pp p])
     (if (= i octaves)
         sum
         (lp (+ i 1)
