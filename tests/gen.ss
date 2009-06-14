@@ -353,5 +353,271 @@
                  [texture (texture [filename "test-texture"])])]))))
   )
 
+(group csg
+  (build "csg-difference"
+    (render image-simple "csg-difference" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (difference
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+       (lights
+        (list
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+
+  (build "csg-difference2"
+    (render image-simple "csg-difference2" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (difference
+          [shader (marble)]
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+       (lights
+        (list
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+
+  (build "csg-intersect"
+    (render image-simple "csg-intersect" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (intersect
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+       (lights
+        (list
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+
+  (build "csg-intersect2"
+    (render image-simple "csg-intersect2" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (intersect
+          [shader (marble)]
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+       (lights
+        (list
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+
+  (build "csg-union"
+    (render image-simple "csg-union" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (union
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+        (lights
+         (list
+          (distant-light
+           (position (make-vec -10 10 10))
+           (color (make-color 1 1 1))
+           (intensity .9))
+          (point-light
+           (position (make-vec 1 1 1))
+           (color (make-color 1 1 1))
+           (intensity 1)))))))
+
+  (build "csg-union2"
+    (render image-simple "csg-union2" 128 128
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 0 .3 .3))
+       (objects
+        (list
+         (plane
+          [center (make-vec 0 -1 0)]
+          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          (color (make-color 0 .6 0))
+          (shader (matte)))
+         (union
+          [shader (marble)]
+          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+          [A (cube
+              [color (make-color 1 0 0)]
+              [shader (matte)]
+              [M (scale .75 .75 .75)])]
+          [B (sphere
+              (color (make-color 0 0 1))
+              (shader (matte)))])))
+       (lights
+        (list
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+
+  (build "csg-all"
+    (render image-simple "csg-all" 256 256
+      (<camera> make (translation (make-vec 0 0 10))
+        (target (make-vec 0 0 0)) (distance 1)
+        (view
+         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      (<scene>
+       make
+       (background-color (make-color 1 1 1))
+       (objects
+        (list
+         (difference
+          [M (matrix-mul (rotate-x 30) (rotate-y 50))]
+          [A (intersect
+              [A (cube
+                  [color (make-color 1 0 0)]
+                  [shader (plastic)]
+                  [M (scale .75 .75 .75)])]
+              [B (sphere
+                  (color (make-color 0 0 1))
+                  (shader (plastic)))])]
+          [B (union
+              [M (scale .5 .5 .5)]
+              [shader (plastic)]
+              [color (make-color 0 1 0)]
+              [A (quadric [coefficients #(1 1 0 0 0 0 0 0 0 -1)])]
+              [B (union
+                  [A (quadric
+                      [M (rotate-y 90)]
+                      [coefficients #(1 1 0 0 0 0 0 0 0 -1)])]
+                  [B (quadric
+                      [M (rotate-x 90)]
+                      [coefficients #(1 1 0 0 0 0 0 0 0 -1)])])])])))
+       (lights
+        (list
+         (ambient-light [intensity 0.3])
+         (distant-light
+          (position (make-vec -10 10 10))
+          (color (make-color 1 1 1))
+          (intensity .9))
+         (point-light
+          (position (make-vec 1 1 1))
+          (color (make-color 1 1 1))
+          (intensity 1)))))))
+  )
+
 (write-sources)
 (exit)

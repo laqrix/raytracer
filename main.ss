@@ -19,12 +19,6 @@
 (define-record <intersect> time object extra)
 (define-record <ray> origin direction)
 
-(load "shaders.ss")
-(load "lights.ss")
-(load "objects.ss")
-
-(load "image.ss")
-
 (define-syntax fold-list
   (syntax-rules ()
     [(_ [item ls] [acc init] b1 b2 ...)
@@ -32,6 +26,12 @@
      (fold-left (lambda (acc item) b1 b2 ...)
        init
        ls)]))
+
+(load "shaders.ss")
+(load "lights.ss")
+(load "objects.ss")
+
+(load "image.ss")
 
 (define (filterwidth x) 1)
 (define (filterwidthp x) 1)
@@ -46,29 +46,11 @@
 (define (find-intersections ray scene)
   (sort-intersections
    (fold-list [obj (<scene> objects scene)] [acc '()]
-     (fold-list [t (object-intersections obj ray)] [acc acc]
+     (fold-list [inter (object-intersections obj ray)] [acc acc]
        ;; Make sure we don't accidently hit the object at the intersect-point
-       (if (< (<intersect> time t) EPSILON)
+       (if (< (<intersect> time inter) EPSILON)
            acc
-           (cons t acc))))))
-
-(define scene)                          ; should really be in user env
-(define object)                         ; should really be in user env
-(define intersect-point)                ; should really be in user env
-(define normal)                         ; should really be in user env
-(define incoming)                       ; should really be in user env
-(define depth)                          ; should really be in user env
-(define (object-shade s obj extra ip i d)
-  (let ([shader (object-shader obj)])
-    (if shader
-        (fluid-let ([scene s]
-                    [object obj]
-                    [intersect-point ip]
-                    [normal (object-normal obj extra ip)]
-                    [incoming i]
-                    [depth d])
-          (shader))
-        (error 'object-shade "no object shader defined for ~a" obj))))
+           (cons inter acc))))))
 
 (define light)                          ; should really be in user env
 (define (light-shade l)
@@ -90,7 +72,8 @@
                  (let ([incoming (<ray> direction ray)]
                        [intersect-point (traverse-ray ray t)])
                    (color-num-mul
-                    (object-shade scene obj extra intersect-point incoming depth)
+                    (object-shade scene obj extra intersect-point
+                      (object-normal obj extra intersect-point) incoming depth)
                     Kr))]))))))
 
 (define (ray-gun width height camera)
@@ -177,6 +160,21 @@
   (unless (= (vector-length coefficients) 10)
     (error 'quadric "incorrect number of coefficients: ~s" coefficients))
   (make-quadric color shader center M (matrix-inverse M) coefficients))
+
+(define-defaults union ([color (make-color 1 1 1)] [shader #f]
+                        [center (make-vec 0 0 0)] [M (matrix-identity 3)]
+                        [A #f] [B #f])
+  (make-csg-union color shader center M (matrix-inverse M) A B))
+
+(define-defaults intersect ([color (make-color 1 1 1)] [shader #f]
+                            [center (make-vec 0 0 0)] [M (matrix-identity 3)]
+                            [A #f] [B #f])
+  (make-csg-intersect color shader center M (matrix-inverse M) A B))
+
+(define-defaults difference ([color (make-color 1 1 1)] [shader #f]
+                             [center (make-vec 0 0 0)] [M (matrix-identity 3)]
+                             [A #f] [B #f])
+  (make-csg-difference color shader center M (matrix-inverse M) A B))
 
 (define-defaults texture ([filename #f])
   (let ([img (read-texture-file filename)])

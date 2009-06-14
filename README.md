@@ -24,8 +24,3 @@ Things to do:
 
 - Shader "library"
   - glass
-
-- Constructive Solid Geometry
-  - union
-  - intersection
-  - difference

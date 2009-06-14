@@ -11,14 +11,26 @@
 (define-scheme-record quadric object ((immutable coefficients)))
 (define-scheme-record polyhedron object ((immutable planes)))
 
+(define-scheme-record csg object ((immutable object1) (immutable object2)))
+(define-scheme-record csg-union csg ())
+(define-scheme-record csg-intersect csg ())
+(define-scheme-record csg-difference csg ())
+
 (define (object-intersections object ray)
   ((cond
     [(sphere? object) sphere-intersections]
     [(plane? object) plane-intersections]
     [(polyhedron? object) polyhedron-intersections]
     [(quadric? object) quadric-intersections]
+    [(csg-union? object) csg-union-intersections]
+    [(csg-intersect? object) csg-intersect-intersections]
+    [(csg-difference? object) csg-difference-intersections]
     [else (error 'object-intersections "unknown object type: ~s" object)])
-   object ray))
+   object
+   (<ray> make
+     [origin (mat-vec-mul (object-Mi object)
+               (vec-vec-sub (<ray> origin ray) (object-center object)))]
+     [direction (mat-vec-mul (object-Mi object) (<ray> direction ray))])))
 
 (define (object-normal object extra intersect-point)
   ((cond
@@ -26,8 +38,32 @@
     [(plane? object) plane-normal]
     [(polyhedron? object) polyhedron-normal]
     [(quadric? object) quadric-normal]
+    [(csg? object) csg-normal]
     [else (error 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
+
+(define scene)                          ; should really be in user env
+(define object)                         ; should really be in user env
+(define intersect-point)                ; should really be in user env
+(define normal)                         ; should really be in user env
+(define incoming)                       ; should really be in user env
+(define depth)                          ; should really be in user env
+(define (object-shade s obj extra ip norm i d)
+  (cond
+   [(object-shader obj) =>
+    (lambda (shader)
+      (fluid-let ([scene s]
+                  [object obj]
+                  [intersect-point ip]
+                  [normal norm]
+                  [incoming i]
+                  [depth d])
+        (shader)))]
+   [(and (csg? obj) (<intersect> object extra))
+    (object-shade s (<intersect> object extra) (<intersect> extra extra)
+      ip norm i d)]
+   [else
+    (error 'object-shade "no object shader defined for ~a" obj)]))
 
 (define (point->surface object point)
   ;; Maps intersect point to surface shader coordinate space
@@ -45,9 +81,8 @@
    [else (error 'point->texture "unknown object type: ~s" object)]))
 
 (define (sphere-intersections object ray)
-  (let ([origin (mat-vec-mul (object-Mi object)
-                  (vec-vec-sub (<ray> origin ray) (object-center object)))]
-        [direction (mat-vec-mul (object-Mi object) (<ray> direction ray))])
+  (let ([origin (<ray> origin ray)]
+        [direction (<ray> direction ray)])
     (let* ([a (vec-dot direction direction)]
            [b (vec-dot direction origin)]
            [c (- (vec-dot origin origin) 1)]
@@ -88,9 +123,8 @@
     (make-vec theta phi 0)))
 
 (define (plane-intersections object ray)
-  (let ([origin (mat-vec-mul (object-Mi object)
-                  (vec-vec-sub (<ray> origin ray) (object-center object)))]
-        [direction (mat-vec-mul (object-Mi object) (<ray> direction ray))])
+  (let ([origin (<ray> origin ray)]
+        [direction (<ray> direction ray)])
     (let ([t (- (/ (vec-k origin) (vec-k direction)))])
       (if (and 
            (<= (abs (+ (vec-i origin) (* t (vec-i direction)))) 1)
@@ -113,9 +147,8 @@
   (make-vec (fmod (vec-i point) 1) (fmod (vec-j point) 1) 0))
 
 (define (polyhedron-intersections obj ray)
-  (let ([origin (mat-vec-mul (object-Mi obj)
-                  (vec-vec-sub (<ray> origin ray) (object-center obj)))]
-        [direction (mat-vec-mul (object-Mi obj) (<ray> direction ray))])
+  (let ([origin (<ray> origin ray)]
+        [direction (<ray> direction ray)])
     (let lp ([planes (polyhedron-planes obj)] [t-in -inf.0] [t-out +inf.0]
              [plane-in #f] [plane-out #f])
       (if (null? planes)
@@ -150,9 +183,8 @@
   (mat-vec-mul (object-M obj) extra))
 
 (define (quadric-intersections object ray)
-  (let ([origin (mat-vec-mul (object-Mi object)
-                  (vec-vec-sub (<ray> origin ray) (object-center object)))]
-        [direction (mat-vec-mul (object-Mi object) (<ray> direction ray))])
+  (let ([origin (<ray> origin ray)]
+        [direction (<ray> direction ray)])
     (let ([Xo (vec-i origin)] [Yo (vec-j origin)] [Zo (vec-k origin)]
           [Xd (vec-i direction)] [Yd (vec-j direction)] [Zd (vec-k direction)])
       (match (quadric-coefficients object)
@@ -194,3 +226,115 @@
                    (+ (* B ipx) (* 2 E ipy) (* F ipz) G)
                    (+ (* C ipx) (* F ipy) (* 2 H ipz) I))])
            (mat-vec-mul (object-Mi object) v))]))))
+
+(define (csg-union-intersections object ray)
+  (map
+   (lambda (inter)
+     (<intersect> copy inter [object object] [extra inter]))
+   (let union ([a (object-intersections (csg-object1 object) ray)]
+               [b (object-intersections (csg-object2 object) ray)])
+     (cond
+      [(null? a) b]
+      [(null? b) a]
+      [else
+       (let ([a1 (car a)]
+             [a2 (cadr a)]
+             [b1 (car b)]
+             [b2 (cadr b)])
+         (let ([ca1 (<intersect> time a1)]
+               [ca2 (<intersect> time a2)]
+               [cb1 (<intersect> time b1)]
+               [cb2 (<intersect> time b2)])
+           (cond
+            [(<= ca2 cb1)               ; A is completely less than B
+             (append (list a1 a2) (union (cddr a) b))]
+            [(<= cb2 ca1)               ; B is completely less than A
+             (append (list b1 b2) (union a (cddr b)))]
+            [(and (<= ca1 cb1) (>= ca2 cb2)) ; A is completely around B
+             (union a (cddr b))]
+            [(and (<= cb1 ca1) (>= cb2 ca2)) ; B is completely around A
+             (union (cddr a) b)]
+            [(and (< ca1 cb1) (> cb2 ca2)) ; A and B cross, A first
+             (union (append (list a1 b2) (cddr a)) b)]
+            [(and (< cb1 ca1) (> ca2 cb2)) ; A and B cross, B first
+             (union a (append (list b1 a2) (cddr b)))]
+            [else (error 'union "Unhandled condition A=~s, B=~s" a b)])))]))))
+
+(define (csg-intersect-intersections object ray)
+  (map
+   (lambda (inter)
+     (<intersect> copy inter [object object] [extra inter]))
+   (let intersection ([a (object-intersections (csg-object1 object) ray)]
+                      [b (object-intersections (csg-object2 object) ray)])
+     (cond
+      [(null? a) '()]
+      [(null? b) '()]
+      [else
+       (let ([a1 (car a)]
+             [a2 (cadr a)]
+             [b1 (car b)]
+             [b2 (cadr b)])
+         (let ([ca1 (<intersect> time a1)]
+               [ca2 (<intersect> time a2)]
+               [cb1 (<intersect> time b1)]
+               [cb2 (<intersect> time b2)])
+           (cond
+            [(and (= ca1 cb1) (= ca2 cb2)) ; A and B are the same segment
+             (append (list a1 a2) (intersection (cddr a) (cddr b)))]
+            [(<= ca2 cb1)               ; A is completely less than B
+             (intersection (cddr a) b)]
+            [(<= cb2 ca1)               ; B is completely less than A
+             (intersection a (cddr b))]
+            [(and (< ca1 cb1) (> ca2 cb2)) ; A is completely around B
+             (intersection (append (list a1 b1 b1 b2 b2 a2) (cddr a)) b)]
+            [(and (< cb1 ca1) (> cb2 ca2)) ; B is completely around A
+             (intersection a (append (list b1 a1 a1 a2 a2 b2) (cddr b)))]
+            [(and (< ca1 cb1) (> cb2 ca2)) ; A and B cross, A first
+             (intersection (append (list a1 b1 b1 a2) (cddr a)) 
+               (append (list b1 a2 a2 b2) (cddr b)))]
+            [(and (< cb1 ca1) (> ca2 cb2)) ; A and B cross, B first
+             (intersection (append (list a1 b2 b2 a2) (cddr a))
+               (append (list b1 a1 a1 b2) (cddr b)))]
+            [else (error 'intersection "Unhandled condition A=~s, B=~s" a b)])))]))))
+
+(define (csg-difference-intersections object ray)
+  (map
+   (lambda (inter)
+     (<intersect> copy inter [object object] [extra inter]))
+   (let difference ([a (object-intersections (csg-object1 object) ray)]
+                    [b (object-intersections (csg-object2 object) ray)])
+     (cond
+      [(null? a) '()]
+      [(null? b) a]
+      [else
+       (let ([a1 (car a)]
+             [a2 (cadr a)]
+             [b1 (car b)]
+             [b2 (cadr b)])
+         (let ([ca1 (<intersect> time a1)]
+               [ca2 (<intersect> time a2)]
+               [cb1 (<intersect> time b1)]
+               [cb2 (<intersect> time b2)])
+           (cond
+            [(<= ca2 cb1)               ; A is completely less than B
+             (append (list a1 a2) (difference (cddr a) b))] 
+            [(<= cb2 ca1)               ; B is completely less than A
+             (difference a (cddr b))]
+            [(and (<= ca1 cb1) (> ca2 cb2)) ; A is completely around B
+             (difference (append (list a1 b1 b2 a2) (cddr a)) b)]
+            [(and (<= cb1 ca1) (> cb2 ca2)) ; B is completely around A
+             (difference (cddr a) b)]
+            [(and (< ca1 cb1) (>= cb2 ca2)) ; A and B cross, A first
+             (difference (append (list a1 b1) (cddr a)) b)]
+            [(and (< cb1 ca1) (>= ca2 cb2)) ; A and B cross, B first
+             (difference (append (list b2 a2) (cddr a)) b)]
+            [(and (= ca1 cb1) (= ca2 cb2)) ; A and B are exactly the same
+             (difference (cddr a) (cddr b))]
+            [else (error 'difference "Unhandled condition ca1=~s, ca2=~s, cb1=~s, cb2=~s" ca1 ca2 cb1 cb2)])))]))))
+
+(define (csg-normal object extra intersect-point)
+  ;;(mat-vec-mul (object-M object)
+    (object-normal (<intersect> object extra)
+      (<intersect> extra extra)
+      intersect-point))
+  ;;)
