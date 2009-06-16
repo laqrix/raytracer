@@ -9,6 +9,21 @@ This will load 'simple.ss' for the scene. Output will go to 'simple.tga'.
 
 ---
 
+Features:
+
+  - Objects: sphere, plane, general quadrics, general polyhedra, cube, 
+             tetrahedron
+  - CSG: union, intersect, difference
+  - Shaders: matte, metal, shiny-metal, plastic, stripes, checker,
+             mirror, marble, granite, wood
+  - Lights: ambient, distant, point
+
+Less stable features:
+
+  - Texture mapping
+  - Normal mapping
+
+
 Things to do:
 
 - Take a look at performance. It can always be faster.
@@ -22,5 +37,5 @@ Things to do:
   - spot light
   - "uber" light
 
-- Shader "library"
+- More shaders
   - glass

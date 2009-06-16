@@ -103,7 +103,10 @@
          [ss (/ (- (vec-i st) sstart) sscale)]
          [tt (/ (- (vec-j st) tstart) tscale)]
          [N (if normals
-                (vec-vec-sub normal (normals ss tt))
+                (vec-vec-plus normal ; this is a guess for normal mapping
+                  (vec-vec-sub 
+                   (make-vec 0 0 1)
+                   (normals ss tt)))
                 normal)]
          [Nf (faceforward (vec-normalize N) incoming)]
          [V  (vec-normalize (vec-reverse incoming))])
