@@ -135,14 +135,6 @@
                         [center (make-vec 0 0 0)] [M (matrix-identity 3)])
   (make-plane color shader center M (matrix-inverse M)))
 
-(define-defaults cube ([color (make-color 1 1 1)] [shader #f]
-                       [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
-    (list
-     (make-vec 0 0 1) (make-vec 0 0 -1)
-     (make-vec 0 1 0) (make-vec 0 -1 0)
-     (make-vec 1 0 0) (make-vec -1 0 0))))
-
 (define-defaults tetrahedron ([color (make-color 1 1 1)] [shader #f]
                               [center (make-vec 0 0 0)] [M (matrix-identity 3)])
   (make-polyhedron color shader center M (matrix-inverse M)
@@ -152,6 +144,56 @@
      (make-vec 1 1 -1)
      (make-vec 1 -1 1))))
 
+(define-defaults cube ([color (make-color 1 1 1)] [shader #f]
+                       [center (make-vec 0 0 0)] [M (matrix-identity 3)])
+  (make-polyhedron color shader center M (matrix-inverse M)
+    (list
+     (make-vec 0 0 1) (make-vec 0 0 -1)
+     (make-vec 0 1 0) (make-vec 0 -1 0)
+     (make-vec 1 0 0) (make-vec -1 0 0))))
+
+(define-defaults octahedron ([color (make-color 1 1 1)] [shader #f]
+                             [center (make-vec 0 0 0)] [M (matrix-identity 3)])
+  (make-polyhedron color shader center M (matrix-inverse M)
+    (list
+     (make-vec 1 1 1)
+     (make-vec -1 1 1)
+     (make-vec -1 -1 1)
+     (make-vec 1 -1 1)
+     (make-vec 1 1 -1)
+     (make-vec -1 1 -1)
+     (make-vec -1 -1 -1)
+     (make-vec 1 -1 -1))))
+
+(define-defaults icosahedron ([color (make-color 1 1 1)] [shader #f]
+                              [center (make-vec 0 0 0)] [M (matrix-identity 3)])
+  (make-polyhedron color shader center M (matrix-inverse M)
+    (let* ([t (/ (- (sqrt 5) 1) 2)]
+           [nt (- t)]
+           [st (* t t)]
+           [nst (- st)])
+      (list 
+       (make-vec t t t)
+       (make-vec 1 0 st)
+       (make-vec t nt t)
+       (make-vec 0 nst 1)
+       (make-vec 0 st 1)
+       (make-vec 1 0 nst)
+       (make-vec t t nt)
+       (make-vec st 1 0)
+       (make-vec nst 1 0)
+       (make-vec nt t nt)
+       (make-vec 0 st -1)
+       (make-vec t nt nt)
+       (make-vec st -1 0)
+       (make-vec nst -1 0)
+       (make-vec -1 0 st)
+       (make-vec nt t t)
+       (make-vec nt nt nt)
+       (make-vec 0 nst -1)
+       (make-vec nt nt t)
+       (make-vec -1 0 nst)))))
+  
 (define-defaults quadric ([color (make-color 1 1 1)] [shader #f]
                           [center (make-vec 0 0 0)] [M (matrix-identity 3)]
                           [coefficients #f])

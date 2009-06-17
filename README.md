@@ -12,11 +12,11 @@ This will load 'simple.ss' for the scene. Output will go to 'simple.tga'.
 Features:
 
   - Objects: sphere, plane, general quadrics, general polyhedra, cube, 
-             tetrahedron
+             tetrahedron, octahedron, icosahedron
   - CSG: union, intersect, difference
   - Shaders: matte, metal, shiny-metal, plastic, stripes, checker,
              mirror, marble, granite, wood
-  - Lights: ambient, distant, point
+  - Lights: ambient, distant, point, spot
 
 Less stable features:
 
@@ -31,7 +31,6 @@ Things to do:
 - More objects
   - cylinder
   - cone
-  - polyhedra - octahedron, icosahedron
 
 - More lights
   - "uber" light
