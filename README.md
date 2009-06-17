@@ -34,7 +34,6 @@ Things to do:
   - polyhedra - octahedron, icosahedron
 
 - More lights
-  - spot light
   - "uber" light
 
 - More shaders

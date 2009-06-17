@@ -54,67 +54,35 @@
        expr ...)]))
 
 (group lights
-  (build "light-ambient"
-    (render image-simple "light-ambient" 128 128 
-      (<camera> make
-        [translation (make-vec 0 0 10)]
-        [target (make-vec 0 0 0)]
-        [distance 1]
-        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-      (<scene> make
-        [background-color (make-color 0 .3 .3)]
-        [objects
-         (list
-          (sphere [center (make-vec 0 0 0)]
-            [radius 1]
-            [shader (matte)]
-            [color (make-color 1 1 1)]))]
-        [lights
-         (list
-          (ambient-light [color (make-color 1 1 1)]
-            [intensity 1]))])))
-  
-  (build "light-distant"
-    (render image-simple "light-distant" 128 128
-      (<camera> make
-        [translation (make-vec 0 0 10)]
-        [target (make-vec 0 0 0)]
-        [distance 1]
-        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-      (<scene> make
-        [background-color (make-color 0 .3 .3)]
-        [objects
-         (list
-          (sphere [center (make-vec 0 0 0)]
-            [radius 1]
-            [shader (matte)]
-            [color (make-color 1 1 1)]))]
-        [lights
-         (list
-          (distant-light [position (make-vec -10 10 10)]
-            [color (make-color 1 1 1)]
-            [intensity 1]))])))
-
-  (build "light-point"
-    (render image-simple "light-point" 128 128
-      (<camera> make
-        [translation (make-vec 0 0 10)]
-        [target (make-vec 0 0 0)]
-        [distance 1]
-        [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
-      (<scene> make
-        [background-color (make-color 0 .3 .3)]
-        [objects
-         (list
-          (sphere [center (make-vec 0 0 0)]
-            [radius 1]
-            [shader (matte)]
-            [color (make-color 1 1 1)]))]
-        [lights
-         (list
-          (point-light [position (make-vec -10 10 10)]
-            [color (make-color 1 1 1)]
-            [intensity 100]))])))
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "light-" (car p))]
+           [expr (cdr p)])
+       ($build name
+         `((render image-simple ,name 128 128 
+             (<camera> make
+               [translation (make-vec 0 0 10)]
+               [target (make-vec 0 0 0)]
+               [distance 1]
+               [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+             (<scene> make
+               [background-color (make-color 0 .3 .3)]
+               [objects
+                (list
+                 (sphere [center (make-vec 0 0 0)]
+                   [radius 1]
+                   [shader (matte)]
+                   [color (make-color 1 1 1)])
+                 (plane
+                  [center (make-vec 0 -1 0)]
+                  [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+                  (color (make-color 0 .6 0))
+                  (shader (shiny-metal [Kr 0]))))]
+               [lights (list ,expr)]))))))
+   `(("ambient" . (ambient-light))
+     ("distant" . (distant-light [position (make-vec -10 10 10)]))
+     ("point" . (point-light [position (make-vec -10 10 10)] [intensity 100]))
+     ("spot" . (spot-light [position (make-vec 0 3 0)] [intensity 9]))))
   )
 
 (group objects

@@ -45,3 +45,24 @@
         (make-color 0 0 0)
         (let ([L (vec-vec-sub intersect-point position)])
           (color-num-mul color (/ intensity (vec-dot L L)))))))
+
+(define-light spot-light
+  ([color (make-color 1 1 1)] [intensity 1] [direction (make-vec 0 -1 0)]
+   [coneangle 30] [coneangle-delta 5] [beamdistribution 2]) ()
+   ;; Assumes direction is already normalized.
+  (let ([position (light-position light)])
+    (if (in-shadow? intersect-point position)
+        (make-color 0 0 0)
+        ;; Light shaders, L is from the light to the surface
+        (let* ([L (vec-vec-sub intersect-point position)]
+               [cosangle (/ (vec-dot L direction) (vec-length L))]
+               [coneangle (degrees->radians coneangle)])
+          (if (< (acos cosangle) coneangle)
+              (let* ([cosoutside (cos coneangle)]
+                     [cosinside
+                      (cos (- coneangle (degrees->radians coneangle-delta)))]
+                     [atten
+                      (* (/ (expt cosangle beamdistribution) (vec-dot L L))
+                         (smoothstep cosoutside cosinside cosangle))])
+                (color-num-mul color (* intensity atten)))
+              (make-color 0 0 0))))))
