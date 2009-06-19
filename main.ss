@@ -60,10 +60,15 @@
           (shader))
         (error 'light-shade "no light shader defined for ~a" l))))
 
+(define (opaque? opacity)
+  (and (>= (<color> r opacity) 1)
+       (>= (<color> g opacity) 1)
+       (>= (<color> b opacity) 1)))
+
 (define (pixel-color-from-ray scene ray Kr depth)
   (if (or (= depth 0) (<= Kr 0))
       (make-color 0 0 0)
-      (let ([ls (find-intersections ray scene)])
+      (let lp ([ls (find-intersections ray scene)])
         (if (null? ls)
             (<scene> background-color scene)
             (let ([first (car ls)])
@@ -71,10 +76,28 @@
                 [`(<intersect> [time ,t] [object ,obj] [extra ,extra])
                  (let ([incoming (<ray> direction ray)]
                        [intersect-point (traverse-ray ray t)])
-                   (color-num-mul
-                    (object-shade scene obj extra intersect-point
-                      (object-normal obj extra intersect-point) incoming depth)
-                    Kr))]))))))
+                   (let-values ([(color opacity)
+                                 (object-shade scene obj extra intersect-point
+                                   (object-normal obj extra intersect-point)
+                                   incoming
+                                   depth)])
+                     (let ([rest (cdr ls)]
+                           [color (color-num-mul color Kr)])
+                       (if (opaque? opacity)
+                           color
+                           (cond
+                            [(object-volume obj) =>
+                             (lambda (shader)
+                               (let-values ([(vol-color vol-opacity)
+                                             (volume-shade obj
+                                               intersect-point
+                                               incoming)])
+                                 (let ([color (color-add color vol-color)])
+                                   (if (opaque? vol-opacity)
+                                       color
+                                       (color-add color (lp rest))))))]
+                            [else
+                             (color-add color (lp rest))])))))]))))))
 
 (define (ray-gun width height camera)
   (define view (<camera> view camera))
@@ -125,36 +148,51 @@
 
 ;; Scene Syntax
 
-(define-defaults sphere ([color (make-color 1 1 1)] [shader #f]
-                         [center (make-vec 0 0 0)] [radius 1]
+(define-defaults sphere ([color (make-color 1 1 1)]
+                         [opacity (make-color 1 1 1)]
+                         [surface #f] [volume #f]
+                         [center (make-vec 0 0 0)]
+                         [radius 1]
                          [M (matrix-identity 3)])
   (let ([M (matrix-mul (scale radius radius radius) M)])
-    (make-sphere color shader center M (matrix-inverse M))))
+    (make-sphere color opacity surface volume center M (matrix-inverse M))))
 
-(define-defaults plane ([color (make-color 1 1 1)] [shader #f]
-                        [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-plane color shader center M (matrix-inverse M)))
+(define-defaults plane ([color (make-color 1 1 1)]
+                        [opacity (make-color 1 1 1)]
+                        [surface #f] [volume #f]
+                        [center (make-vec 0 0 0)]
+                        [M (matrix-identity 3)])
+  (make-plane color opacity surface volume center M (matrix-inverse M)))
 
-(define-defaults tetrahedron ([color (make-color 1 1 1)] [shader #f]
-                              [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
+(define-defaults tetrahedron ([color (make-color 1 1 1)]
+                              [opacity (make-color 1 1 1)]
+                              [surface #f] [volume #f]
+                              [center (make-vec 0 0 0)]
+                              [M (matrix-identity 3)])
+  (make-polyhedron color opacity surface volume center M (matrix-inverse M)
     (list
      (make-vec -1 -1 -1)
      (make-vec -1 1 1)
      (make-vec 1 1 -1)
      (make-vec 1 -1 1))))
 
-(define-defaults cube ([color (make-color 1 1 1)] [shader #f]
-                       [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
+(define-defaults cube ([color (make-color 1 1 1)]
+                       [opacity (make-color 1 1 1)]
+                       [surface #f] [volume #f]
+                       [center (make-vec 0 0 0)]
+                       [M (matrix-identity 3)])
+  (make-polyhedron color opacity surface volume center M (matrix-inverse M)
     (list
      (make-vec 0 0 1) (make-vec 0 0 -1)
      (make-vec 0 1 0) (make-vec 0 -1 0)
      (make-vec 1 0 0) (make-vec -1 0 0))))
 
-(define-defaults octahedron ([color (make-color 1 1 1)] [shader #f]
-                             [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
+(define-defaults octahedron ([color (make-color 1 1 1)]
+                             [opacity (make-color 1 1 1)]
+                             [surface #f] [volume #f]
+                             [center (make-vec 0 0 0)]
+                             [M (matrix-identity 3)])
+  (make-polyhedron color opacity surface volume center M (matrix-inverse M)
     (list
      (make-vec 1 1 1)
      (make-vec -1 1 1)
@@ -165,9 +203,12 @@
      (make-vec -1 -1 -1)
      (make-vec 1 -1 -1))))
 
-(define-defaults icosahedron ([color (make-color 1 1 1)] [shader #f]
-                              [center (make-vec 0 0 0)] [M (matrix-identity 3)])
-  (make-polyhedron color shader center M (matrix-inverse M)
+(define-defaults icosahedron ([color (make-color 1 1 1)]
+                              [opacity (make-color 1 1 1)]
+                              [surface #f] [volume #f]
+                              [center (make-vec 0 0 0)]
+                              [M (matrix-identity 3)])
+  (make-polyhedron color opacity surface volume center M (matrix-inverse M)
     (let* ([t (/ (- (sqrt 5) 1) 2)]
            [nt (- t)]
            [st (* t t)]
@@ -194,29 +235,47 @@
        (make-vec nt nt t)
        (make-vec -1 0 nst)))))
   
-(define-defaults quadric ([color (make-color 1 1 1)] [shader #f]
-                          [center (make-vec 0 0 0)] [M (matrix-identity 3)]
+(define-defaults quadric ([color (make-color 1 1 1)]
+                          [opacity (make-color 1 1 1)]
+                          [surface #f] [volume #f]
+                          [center (make-vec 0 0 0)]
+                          [M (matrix-identity 3)]
                           [coefficients #f])
   (unless (vector? coefficients)
     (error 'quadric "coefficients are not a vector: ~s" coefficients))
   (unless (= (vector-length coefficients) 10)
     (error 'quadric "incorrect number of coefficients: ~s" coefficients))
-  (make-quadric color shader center M (matrix-inverse M) coefficients))
+  (make-quadric color opacity surface volume center M (matrix-inverse M)
+    coefficients))
 
-(define-defaults union ([color (make-color 1 1 1)] [shader #f]
-                        [center (make-vec 0 0 0)] [M (matrix-identity 3)]
-                        [A #f] [B #f])
-  (make-csg-union color shader center M (matrix-inverse M) A B))
+(define-defaults union ([color (make-color 1 1 1)]
+                        [opacity (make-color 1 1 1)]
+                        [surface #f] [volume #f]
+                        [center (make-vec 0 0 0)]
+                        [M (matrix-identity 3)]
+                        [A #f]
+                        [B #f])
+  (make-csg-union color opacity surface volume center M (matrix-inverse M) A B))
 
-(define-defaults intersect ([color (make-color 1 1 1)] [shader #f]
-                            [center (make-vec 0 0 0)] [M (matrix-identity 3)]
-                            [A #f] [B #f])
-  (make-csg-intersect color shader center M (matrix-inverse M) A B))
+(define-defaults intersect ([color (make-color 1 1 1)]
+                            [opacity (make-color 1 1 1)]
+                            [surface #f] [volume #f]
+                            [center (make-vec 0 0 0)]
+                            [M (matrix-identity 3)]
+                            [A #f]
+                            [B #f])
+  (make-csg-intersect color opacity surface volume center M (matrix-inverse M)
+    A B))
 
-(define-defaults difference ([color (make-color 1 1 1)] [shader #f]
-                             [center (make-vec 0 0 0)] [M (matrix-identity 3)]
-                             [A #f] [B #f])
-  (make-csg-difference color shader center M (matrix-inverse M) A B))
+(define-defaults difference ([color (make-color 1 1 1)]
+                             [opacity (make-color 1 1 1)]
+                             [surface #f] [volume #f]
+                             [center (make-vec 0 0 0)]
+                             [M (matrix-identity 3)]
+                             [A #f]
+                             [B #f])
+  (make-csg-difference color opacity surface volume center M (matrix-inverse M)
+    A B))
 
 (define-defaults texture ([filename #f])
   (let ([img (read-texture-file filename)])

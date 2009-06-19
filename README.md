@@ -14,12 +14,13 @@ Features:
   - Objects: sphere, plane, general quadrics, general polyhedra, cube, 
              tetrahedron, octahedron, icosahedron
   - CSG: union, intersect, difference
-  - Shaders: matte, metal, shiny-metal, plastic, stripes, checker,
+  - Shaders: constant, matte, metal, shiny-metal, plastic, stripes, checker,
              mirror, marble, granite, wood
   - Lights: ambient, distant, point, spot
 
 Less stable features:
 
+  - Opacity and Volume shaders
   - Texture mapping
   - Normal mapping
 
@@ -36,4 +37,12 @@ Things to do:
   - "uber" light
 
 - More shaders
+  - show-st
+  - show-xyz
+  - screen (wireframe)
+  - glow
+  - shiny-plastic
   - glass
+  - depth-cue
+  - fog
+  - smoke

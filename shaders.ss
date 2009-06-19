@@ -30,7 +30,7 @@
   (fold-lights [light scene] [color (make-color 0 0 0)]
     (let ([amb (light-property light '__ambient)])
       (if (> amb 0)
-          (color-color-plus color (color-num-mul (light-shade light) amb))
+          (color-add color (color-num-mul (light-shade light) amb))
           color))))
 
 (define-shader diffuse ([N #f])
@@ -39,7 +39,7 @@
     (let ([nondiff (light-property light '__nondiffuse)])
       (if (< nondiff 1)
           (let ([L (vec-vec-sub (light-position light) intersect-point)])
-            (color-color-plus color
+            (color-add color
               (color-num-mul (light-shade light)
                 (* (- 1 nondiff) (vec-dot (vec-normalize L) N)))))
           color))))
@@ -51,7 +51,7 @@
       (if (< nonspec 1)
           (let ([L (vec-vec-sub (light-position light) intersect-point)])
             (let ([H (vec-normalize (vec-vec-plus L eye))])
-              (color-color-plus color
+              (color-add color
                 (color-num-mul (light-shade light)
                   (* (- 1 nonspec)
                      (expt (max 0 (vec-dot N H)) (/ 1 roughness)))))))

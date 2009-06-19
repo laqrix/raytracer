@@ -1,6 +1,8 @@
 (define-scheme-record object
   ((immutable color)
-   (immutable shader)
+   (immutable opacity)
+   (immutable surface)                  ; Surface shader, cannot be #f
+   (immutable volume)                   ; Volume shader | #f
    (immutable center)
    (immutable M)                        ; Transform matrix
    (immutable Mi)                       ; Inverse transform
@@ -44,26 +46,46 @@
 
 (define scene)                          ; should really be in user env
 (define object)                         ; should really be in user env
+(define Cs)                             ; should really be in user env
+(define Os)                             ; should really be in user env
 (define intersect-point)                ; should really be in user env
 (define normal)                         ; should really be in user env
 (define incoming)                       ; should really be in user env
 (define depth)                          ; should really be in user env
 (define (object-shade s obj extra ip norm i d)
   (cond
-   [(object-shader obj) =>
+   [(object-surface obj) =>
     (lambda (shader)
       (fluid-let ([scene s]
                   [object obj]
+                  [Cs (object-color obj)]
+                  [Os (object-opacity obj)]
                   [intersect-point ip]
                   [normal norm]
                   [incoming i]
                   [depth d])
-        (shader)))]
+        (call-with-values shader
+          (case-lambda
+           [(color) (values color Os)]
+           [(color opacity) (values color opacity)]))))]
    [(and (csg? obj) (<intersect> object extra))
     (object-shade s (<intersect> object extra) (<intersect> extra extra)
       ip norm i d)]
    [else
     (error 'object-shade "no object shader defined for ~a" obj)]))
+
+(define (volume-shade obj ip i)
+  (cond
+   [(object-volume obj) =>
+    (lambda (shader)
+      (fluid-let ([object obj]
+                  [intersect-point ip]
+                  [incoming i])
+        (call-with-values shader
+          (case-lambda
+           [(color) (values color (object-opacity obj))]
+           [(color opacity) (values color opacity)]))))]
+   [else #f]))
 
 (define (point->surface object point)
   ;; Maps intersect point to surface shader coordinate space

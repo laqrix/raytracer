@@ -2,17 +2,25 @@
 
 (define (make-color r g b) (<color> make [r r] [g g] [b b]))
 
-(define (color-color-plus c1 c2)
-  (make-color
-   (+ (<color> r c1) (<color> r c2))
-   (+ (<color> g c1) (<color> g c2))
-   (+ (<color> b c1) (<color> b c2))))
+(define color-add
+  (case-lambda
+   [(c1) c1]
+   [(c1 c2)
+    (make-color
+     (+ (<color> r c1) (<color> r c2))
+     (+ (<color> g c1) (<color> g c2))
+     (+ (<color> b c1) (<color> b c2)))]
+   [(c1 c2 . rest) (apply color-add (color-add c1 c2) rest)]))
 
-(define (color-color-mul c1 c2)
-  (make-color
-   (* (<color> r c1) (<color> r c2))
-   (* (<color> g c1) (<color> g c2))
-   (* (<color> b c1) (<color> b c2))))
+(define color-mul
+  (case-lambda
+   [(c1) c1]
+   [(c1 c2)
+    (make-color
+     (* (<color> r c1) (<color> r c2))
+     (* (<color> g c1) (<color> g c2))
+     (* (<color> b c1) (<color> b c2)))]
+   [(c1 c2 . rest) (apply color-mul (color-mul c1 c2) rest)]))
 
 (define (color-num-plus c n)
   (make-color
@@ -27,7 +35,7 @@
    (* (<color> b c) n)))
 
 (define (color-mix c1 c2 x)
-  (color-color-plus
+  (color-add
    (color-num-mul c1 (- 1 x))
    (color-num-mul c2 x)))
 
