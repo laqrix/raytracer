@@ -233,3 +233,13 @@
     ;; TODO: Try to displace Nf
     (color-mul Os
       (material-plastic Nf Cwood Ka Kd (* Ks (- 1 (* .5 wood))) roughness))))
+
+(define-shader glow ([attenuation 2])
+  (let ([falloff (vec-dot incoming normal)])
+    (if (< falloff 0)
+        (let ([n (expt (/ (* falloff falloff)
+                          (* (vec-dot incoming incoming)
+                             (vec-dot normal normal)))
+                   attenuation)])
+          (values (color-num-mul Cs n) (make-color n n n)))
+        (values Cs (make-color 0 0 0)))))

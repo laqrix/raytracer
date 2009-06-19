@@ -243,7 +243,8 @@
                (list
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
-   `(("matte" . (matte))
+   `(("constant" . (constant))
+     ("matte" . (matte))
      ("metal" . (metal))
      ("shiny-metal" . (shiny-metal))
      ("plastic" . (plastic))
@@ -252,7 +253,8 @@
      ("mirror" . (mirror))
      ("marble" . (marble))
      ("granite" . (granite))
-     ("wood" . (wood))))
+     ("wood" . (wood))
+     ("glow" . (glow))))
   )
 
 (group transparent
@@ -290,7 +292,8 @@
                (list
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
-   `(("matte" . (matte))
+   `(("constant" . (constant))
+     ("matte" . (matte))
      ("metal" . (metal))
      ("shiny-metal" . (shiny-metal))
      ("plastic" . (plastic))
@@ -299,7 +302,8 @@
      ("mirror" . (mirror))
      ("marble" . (marble))
      ("granite" . (granite))
-     ("wood" . (wood))))
+     ("wood" . (wood))
+     ("glow" . (glow))))
   )
 
 (group textures

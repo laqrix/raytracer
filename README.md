@@ -15,7 +15,7 @@ Features:
              tetrahedron, octahedron, icosahedron
   - CSG: union, intersect, difference
   - Shaders: constant, matte, metal, shiny-metal, plastic, stripes, checker,
-             mirror, marble, granite, wood
+             mirror, marble, granite, wood, glow
   - Lights: ambient, distant, point, spot
 
 Less stable features:
@@ -40,7 +40,6 @@ Things to do:
   - show-st
   - show-xyz
   - screen (wireframe)
-  - glow
   - shiny-plastic
   - glass
   - depth-cue
