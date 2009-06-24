@@ -15,6 +15,9 @@
       (do ([n n (+ n modulus)]) ((positive? n) n))
       (do ([n n (- n modulus)]) ((negative? n) (+ n modulus)))))
 
+(define (clamp x xmin xmax)
+  (max xmin (min x xmax)))
+
 (define (mix-num c0 c1 x)
   (+ (* c0 (- 1 x)) (* c1 x)))
 

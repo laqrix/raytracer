@@ -90,8 +90,8 @@
                              (lambda (shader)
                                (let-values ([(vol-color vol-opacity)
                                              (volume-shade obj
-                                               intersect-point
-                                               incoming)])
+                                               intersect-point incoming
+                                               color opacity)])
                                  (let ([color (color-add color vol-color)])
                                    (if (opaque? vol-opacity)
                                        color

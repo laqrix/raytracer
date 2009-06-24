@@ -74,13 +74,17 @@
    [else
     (error 'object-shade "no object shader defined for ~a" obj)]))
 
-(define (volume-shade obj ip i)
+(define Ci)                             ; should really be in user env
+(define Oi)                             ; should really be in user env
+(define (volume-shade obj ip i ci oi)
   (cond
    [(object-volume obj) =>
     (lambda (shader)
       (fluid-let ([object obj]
                   [intersect-point ip]
-                  [incoming i])
+                  [incoming i]
+                  [Ci ci]
+                  [Oi oi])
         (call-with-values shader
           (case-lambda
            [(color) (values color (object-opacity obj))]
