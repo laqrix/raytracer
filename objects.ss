@@ -3,6 +3,7 @@
    (immutable opacity)
    (immutable surface)                  ; Surface shader, cannot be #f
    (immutable volume)                   ; Volume shader | #f
+   (immutable displacement)             ; Displacement shader | #f
    (immutable center)
    (immutable M)                        ; Transform matrix
    (immutable Mi)                       ; Inverse transform
@@ -44,13 +45,27 @@
     [else (error 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
 
-(define scene)                          ; should really be in user env
 (define object)                         ; should really be in user env
+(define normal)                         ; should really be in user env
+(define incoming)                       ; should really be in user env
+(define (object-displace obj ip n)
+  (cond
+   [(object-displacement obj) =>
+    (lambda (shader)
+      (fluid-let ([object obj]
+                  [intersect-point ip]
+                  [normal n])
+        (call-with-values shader
+          (case-lambda
+           [(normal) (values intersect-point normal)]
+           [(intersect-point normal) (values intersect-point normal)]))))]
+   [else
+    (values ip n)]))
+
+(define scene)                          ; should really be in user env
 (define Cs)                             ; should really be in user env
 (define Os)                             ; should really be in user env
 (define intersect-point)                ; should really be in user env
-(define normal)                         ; should really be in user env
-(define incoming)                       ; should really be in user env
 (define depth)                          ; should really be in user env
 (define (object-shade s obj extra ip norm i d)
   (cond

@@ -23,7 +23,7 @@ Less stable features:
   - Opacity and Volume shaders
   - Texture mapping
   - Normal mapping
-
+  - Displacement shaders
 
 Things to do:
 
@@ -41,6 +41,7 @@ Things to do:
   - show-xyz
   - screen (wireframe)
   - shiny-plastic
+  - painted-plastic
   - glass
   - depth-cue
   - fog
