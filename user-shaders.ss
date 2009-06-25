@@ -94,19 +94,13 @@
 
 (define-shader simple-texmap
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor (make-color 1 1 1)]
-   [texture #f] [normals #f]
+   [texture #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
   (let* ([st (point->texture object
                (point->surface object intersect-point))]
          [ss (/ (- (vec-i st) sstart) sscale)]
          [tt (/ (- (vec-j st) tstart) tscale)]
-         [N (if normals
-                (vec-vec-plus normal ; this is a guess for normal mapping
-                  (vec-vec-sub 
-                   (make-vec 0 0 1)
-                   (normals ss tt)))
-                normal)]
-         [Nf (faceforward (vec-normalize N) incoming)]
+         [Nf (faceforward (vec-normalize normal) incoming)]
          [V  (vec-normalize (vec-reverse incoming))])
     (color-add
      (color-mul Os
@@ -120,6 +114,15 @@
      (color-mul
       (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
       specularcolor))))
+
+(define-shader simple-bumpmap
+  ([normals #f]
+   [sstart 0] [sscale 1] [tstart 0] [tscale 1])
+  (let* ([st (point->texture object
+               (point->surface object intersect-point))]
+         [ss (/ (- (vec-i st) sstart) sscale)]
+         [tt (/ (- (vec-j st) tstart) tscale)])
+    (normals ss tt)))
 
 (define-shader marble
   ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor (make-color 1 1 1)]
