@@ -246,3 +246,24 @@
                    attenuation)])
           (values (color-num-mul Cs n) (make-color n n n)))
         (values Cs (make-color 0 0 0)))))
+
+(define-shader screen
+  ([Ks .5] [Kd .5] [Ka .1] [roughness .1] [specularcolor (make-color 1 1 1)]
+   [density .25] [frequency 20])
+  (let ([Nf (faceforward (vec-normalize normal) incoming)]
+        [V  (vec-normalize (vec-reverse incoming))])
+    (let ([st (point->texture object (point->surface object intersect-point))])
+      (let ([Oi (if (or (< (fmod (* (vec-i st) frequency) 1) density)
+                        (< (fmod (* (vec-j st) frequency) 1) density))
+                    (make-color 1 1 1)
+                    (make-color 0 0 0))])
+        (values
+         (color-add
+          (color-mul Oi Cs
+            (color-add
+             (color-num-mul ((ambient)) Ka)
+             (color-num-mul ((diffuse [N Nf])) Kd)))
+          (color-mul
+           (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
+           specularcolor))
+         Oi)))))

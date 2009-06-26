@@ -254,7 +254,8 @@
      ("marble" . (marble))
      ("granite" . (granite))
      ("wood" . (wood))
-     ("glow" . (glow))))
+     ("glow" . (glow))
+     ("screen" . (screen))))
   )
 
 (group transparent
@@ -303,7 +304,8 @@
      ("marble" . (marble))
      ("granite" . (granite))
      ("wood" . (wood))
-     ("glow" . (glow))))
+     ("glow" . (glow))
+     ("screen" . (screen))))
   )
 
 (group textures
