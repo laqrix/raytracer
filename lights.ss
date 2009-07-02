@@ -21,13 +21,13 @@
     [,_ 0]))
 
 (define (in-shadow? point light-pos)
-    ;; TODO: need to limit intersections to between intersect point
-    ;; and light position
-    (pair? (find-intersections
-            (<ray> make
-                   [origin point]
-                   [direction (vec-vec-sub light-pos point)])
-            scene)))
+  ;; TODO: need to limit intersections to between intersect point
+  ;; and light position
+  (pair? (find-intersections
+          (<ray> make
+            [origin point]
+            [direction (vec-vec-sub light-pos point)])
+          scene)))
 
 (define-light ambient-light ([color (make-color 1 1 1)] [intensity 1])
   ([__ambient 1] [__nondiffuse 1] [__nonspecular 1])
@@ -47,15 +47,15 @@
           (color-num-mul color (/ intensity (vec-dot L L)))))))
 
 (define-light spot-light
-  ([color (make-color 1 1 1)] [intensity 1] [direction (make-vec 0 -1 0)]
+  ([color (make-color 1 1 1)] [intensity 1] [target (make-vec 0 0 1)]
    [coneangle 30] [coneangle-delta 5] [beamdistribution 2]) ()
-   ;; Assumes direction is already normalized.
   (let ([position (light-position light)])
     (if (in-shadow? intersect-point position)
         (make-color 0 0 0)
         ;; Light shaders, L is from the light to the surface
         (let* ([L (vec-vec-sub intersect-point position)]
-               [cosangle (/ (vec-dot L direction) (vec-length L))]
+               [A (vec-normalize (vec-vec-sub target position))]
+               [cosangle (/ (vec-dot L A) (vec-length L))]
                [coneangle (degrees->radians coneangle)])
           (if (< (acos cosangle) coneangle)
               (let* ([cosoutside (cos coneangle)]

@@ -82,7 +82,64 @@
    `(("ambient" . (ambient-light))
      ("distant" . (distant-light [position (make-vec -10 10 10)]))
      ("point" . (point-light [position (make-vec -10 10 10)] [intensity 100]))
-     ("spot" . (spot-light [position (make-vec 0 3 0)] [intensity 9]))))
+     ("spot" . (spot-light [intensity 15]
+                 [position (make-vec -3 3 3)]
+                 [target (make-vec 0 0 0)]))))
+
+  (do ([i 0 (+ i 1)]) ((= i 8))
+    (let ([name (format "light-spots-~a" i)])
+      (define (make-lights x)
+        (cond
+         [(fxlogbit? 0 x)
+          (cons `(spot-light
+                  [intensity 25]
+                  [position (make-vec 5 -1 5)]
+                  [target (make-vec 0 0 0)]
+                  [coneangle 15]
+                  [color (make-color 1 .3 .3)])
+            (make-lights (fxlogbit0 0 x)))]
+         [(fxlogbit? 1 x)
+          (cons `(spot-light
+                  [intensity 25]
+                  [position (make-vec -5 -1 5)]
+                  [target (make-vec 0 0 0)]
+                  [coneangle 15]
+                  [color (make-color .3 1 .3)])
+            (make-lights (fxlogbit0 1 x)))]
+         [(fxlogbit? 2 x)
+          (cons `(spot-light
+                  [intensity 25]
+                  [position (make-vec 0 5 5)]
+                  [target (make-vec 0 0 0)]
+                  [coneangle 15]
+                  [color (make-color .3 .3 1)])
+            (make-lights (fxlogbit0 2 x)))]
+         [else '()]))
+      ($build name
+        `((render image-simple ,name 128 128
+            (<camera> make
+              [translation (make-vec 0 0 10)]
+              [target (make-vec 0 0 0)]
+              [distance 1]
+              [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+            (<scene> make
+              [background-color (make-color 0 .3 .3)]
+              [objects
+               (list
+                (sphere [surface (matte)])
+                (plane
+                 (surface (checker [blackcolor (make-color .5 .5 .5)]))
+                 [center (make-vec 0 -1.2 0)]
+                 [M (matrix-mul (scale 5 5 5) (rotate-x -90))])
+                (plane
+                 (surface (checker [blackcolor (make-color .5 .5 .5)]))
+                 [center (make-vec 0 0 -1.2)]
+                 [M (scale 5 5 5)])
+                )]
+              [lights
+               (list
+                (ambient-light [intensity .3])
+                ,@(make-lights i))]))))))
   )
 
 (group objects
