@@ -95,7 +95,7 @@
     (if (= i octaves)
         sum
         (lp (+ i 1)
-          (vec-vec-plus sum (vec-num-mul (vsnoise pp) amp))
+          (vec-add sum (vec-num-mul (vsnoise pp) amp))
           (* amp gain)
           (vec-num-mul pp lacunarity)))))
 

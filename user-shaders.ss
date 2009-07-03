@@ -148,7 +148,7 @@
          [IN (vec-normalize incoming)]
          [V (vec-reverse IN)]
          [color (color-spline
-                 (abs (sin (vec-i (vec-num-plus pnt
+                 (abs (sin (vec-i (vec-num-add pnt
                                     (turbulence pnt octaves lacunarity gain)))))
                  colorlist)])
     (color-add
@@ -183,10 +183,10 @@
           angularwobble angularwobblefreq
           ringy grainy)
   (let* ([offset (vfBm (vec-num-mul Pshad ringnoisefreq) 2 4 .5)]
-         [Pring (vec-vec-plus Pshad (vec-num-mul offset ringnoise))]
-         [Pring (vec-vec-plus Pring 
+         [Pring (vec-add Pshad (vec-num-mul offset ringnoise))]
+         [Pring (vec-add Pring 
                   (vec-num-mul 
-                   (vec-vec-mul 
+                   (vec-mul 
                     (vsnoise (* (vec-k Pshad) trunkwobblefreq))
                     (make-vec 1 1 0)) 
                    trunkwobble))]
@@ -194,7 +194,7 @@
          [r (* (sqrt r2) ringfreq)]
          [r (+ r (* angularwobble (smoothstep 0 5 r) 
                     (snoise (vec-num-mul  
-                             (vec-vec-mul Pring (make-vec 1 1 .1))
+                             (vec-mul Pring (make-vec 1 1 .1))
                              angularwobblefreq))))]
          [dr (filterwidth r)]
          [r (+ r (* .5 (filteredsnoise r dr)))]

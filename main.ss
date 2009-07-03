@@ -37,7 +37,7 @@
 (define (filterwidthp x) 1)
 
 (define (traverse-ray ray t)
-  (vec-vec-plus (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
+  (vec-add (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
 
 (define (sort-intersections ls)
   (sort (lambda (x y) (< (<intersect> time x) (<intersect> time y)))
@@ -112,8 +112,8 @@
       (<view> bottom view) (<view> top view)))
   
   (let ([up (make-vec 0 1 0)]
-        [dir (vec-vec-sub (<camera> target camera)
-                          (<camera> translation camera))])
+        [dir (vec-sub (<camera> target camera)
+               (<camera> translation camera))])
     (let* ([u (vec-normalize (vec-cross up dir))]
            [v (vec-normalize (vec-cross dir u))]
            [n (vec-normalize dir)]
@@ -128,14 +128,14 @@
                   (a 3 1 (vec-i n))
                   (a 3 2 (vec-j n))
                   (a 3 3 (vec-k n))))]
-           [eye (vec-vec-plus
+           [eye (vec-add
                  (mat-vec-mul R (vec-num-mul n (<camera> distance camera)))
                  (<camera> translation camera))])
       (lambda (x y)
         (<ray> make
           [origin eye]
           [direction (vec-normalize
-                      (vec-vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
+                      (vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
 
 (define (image-simple width height camera scene depth)
   (let ([shoot-ray (ray-gun width height camera)])

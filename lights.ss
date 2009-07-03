@@ -26,7 +26,7 @@
   (pair? (find-intersections
           (<ray> make
             [origin point]
-            [direction (vec-vec-sub light-pos point)])
+            [direction (vec-sub light-pos point)])
           scene)))
 
 (define-light ambient-light ([color (make-color 1 1 1)] [intensity 1])
@@ -43,7 +43,7 @@
   (let ([position (light-position light)])
     (if (in-shadow? intersect-point position)
         (make-color 0 0 0)
-        (let ([L (vec-vec-sub intersect-point position)])
+        (let ([L (vec-sub intersect-point position)])
           (color-num-mul color (/ intensity (vec-dot L L)))))))
 
 (define-light spot-light
@@ -53,8 +53,8 @@
     (if (in-shadow? intersect-point position)
         (make-color 0 0 0)
         ;; Light shaders, L is from the light to the surface
-        (let* ([L (vec-vec-sub intersect-point position)]
-               [A (vec-normalize (vec-vec-sub target position))]
+        (let* ([L (vec-sub intersect-point position)]
+               [A (vec-normalize (vec-sub target position))]
                [cosangle (/ (vec-dot L A) (vec-length L))]
                [coneangle (degrees->radians coneangle)])
           (if (< (acos cosangle) coneangle)

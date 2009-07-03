@@ -26,50 +26,51 @@
     (lambda (x)
       (+ (* (- x in-min) delta) out-min))))
 
-;; Triple
-(define-record <triple> x y z)
-
-(define (triple-scalar-plus t n)
-  (<triple> make
-    [x (+ (<triple> x t) n)]
-    [y (+ (<triple> y t) n)]
-    [z (+ (<triple> z t) n)]))
-
-(define (triple-scalar-mul t n)
-  (<triple> make
-    [x (* (<triple> x t) n)]
-    [y (* (<triple> y t) n)]
-    [z (* (<triple> z t) n)]))
-
-(define (triple-triple-plus t1 t2)
-  (<triple> make
-    [x (+ (<triple> x t1) (<triple> x t2))]
-    [y (+ (<triple> y t1) (<triple> y t2))]
-    [z (+ (<triple> z t1) (<triple> z t2))]))
-
-(define (triple-triple-sub t1 t2)
-  (<triple> make
-    [x (- (<triple> x t1) (<triple> x t2))]
-    [y (- (<triple> y t1) (<triple> y t2))]
-    [z (- (<triple> z t1) (<triple> z t2))]))
-
-(define (triple-triple-mul t1 t2)
-  (<triple> make
-    [x (* (<triple> x t1) (<triple> x t2))]
-    [y (* (<triple> y t1) (<triple> y t2))]
-    [z (* (<triple> z t1) (<triple> z t2))]))
-
 ;; Vector
-(define (vec? t) (<triple> is? t))
-(define (vec-i t) (<triple> x t))
-(define (vec-j t) (<triple> y t))
-(define (vec-k t) (<triple> z t))
-(define (make-vec i j k) (<triple> make [x i] [y j] [z k]))
-(define vec-num-plus triple-scalar-plus)
-(define vec-num-mul triple-scalar-mul)
-(define vec-vec-plus triple-triple-plus)
-(define vec-vec-sub triple-triple-sub)
-(define vec-vec-mul triple-triple-mul)
+(define-record <vec> i j k)
+
+(define (make-vec i j k) (<vec> make [i i] [j j] [k k]))
+
+(define (vec? v) (<vec> is? v))
+(define (vec-i v) (<vec> i v))
+(define (vec-j v) (<vec> j v))
+(define (vec-k v) (<vec> k v))
+
+(define vec-add
+  (case-lambda
+   [(v1) v1]
+   [(v1 v2)
+    (make-vec
+     (+ (<vec> i v1) (<vec> i v2))
+     (+ (<vec> j v1) (<vec> j v2))
+     (+ (<vec> k v1) (<vec> k v2)))]
+   [(v1 v2 . rest) (apply vec-add (vec-add v1 v2) rest)]))
+
+(define vec-sub
+  (case-lambda
+   [(v1) v1]
+   [(v1 v2)
+    (make-vec
+     (- (<vec> i v1) (<vec> i v2))
+     (- (<vec> j v1) (<vec> j v2))
+     (- (<vec> k v1) (<vec> k v2)))]
+   [(v1 v2 . rest) (apply vec-sub (vec-sub v1 v2) rest)]))
+
+(define vec-mul
+  (case-lambda
+   [(v1) v1]
+   [(v1 v2)
+    (make-vec
+     (* (<vec> i v1) (<vec> i v2))
+     (* (<vec> j v1) (<vec> j v2))
+     (* (<vec> k v1) (<vec> k v2)))]
+   [(v1 v2 . rest) (apply vec-mul (vec-mul v1 v2) rest)]))
+
+(define (vec-num-add v n)
+  (make-vec (+ (<vec> i v) n) (+ (<vec> j v) n) (+ (<vec> k v) n)))
+
+(define (vec-num-mul v n)
+  (make-vec (* (<vec> i v) n) (* (<vec> j v) n) (* (<vec> k v) n)))
 
 (define (vec-dot v1 v2)
   (+ (* (vec-i v1) (vec-i v2))

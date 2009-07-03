@@ -32,7 +32,7 @@
    object
    (<ray> make
      [origin (mat-vec-mul (object-Mi object)
-               (vec-vec-sub (<ray> origin ray) (object-center object)))]
+               (vec-sub (<ray> origin ray) (object-center object)))]
      [direction (mat-vec-mul (object-Mi object) (<ray> direction ray))])))
 
 (define (object-normal object extra intersect-point)
@@ -112,7 +112,7 @@
    [(plane? object) (plane-point->surface object point)]
    [else
     (mat-vec-mul (object-Mi object)
-      (vec-vec-sub intersect-point (object-center object)))]))
+      (vec-sub intersect-point (object-center object)))]))
 
 (define (point->texture object point)
   ;; Maps point from surface shader coordinates to texture coordinates
@@ -139,7 +139,7 @@
 
 (define (sphere-normal object extra intersect-point)
   (mat-vec-mul (object-M object)
-    (vec-vec-sub intersect-point (object-center object))))
+    (vec-sub intersect-point (object-center object))))
 
 (define (sphere-point->texture object point)
   (let* ([pnt (vec-normalize point)]
@@ -178,9 +178,9 @@
 
 (define (plane-point->surface object point)
   (vec-num-mul
-   (vec-num-plus 
+   (vec-num-add
     (mat-vec-mul (object-Mi object)
-      (vec-vec-sub point (object-center object)))
+      (vec-sub point (object-center object)))
     1)
    0.5))
 
@@ -258,7 +258,7 @@
 (define (quadric-normal object extra intersect-point)
   ;; This solution doesn't make sense. I don't trust it.
   (let ([ip (mat-vec-mul (object-M object)
-              (vec-vec-sub intersect-point (object-center object)))])
+              (vec-sub intersect-point (object-center object)))])
     (let ([ipx (vec-i ip)] [ipy (vec-j ip)] [ipz (vec-k ip)])
       (match (quadric-coefficients object)
         [#(,A ,E ,H ,B ,C ,F ,D ,G ,I ,J)

@@ -22,7 +22,7 @@
      (* (<color> b c1) (<color> b c2)))]
    [(c1 c2 . rest) (apply color-mul (color-mul c1 c2) rest)]))
 
-(define (color-num-plus c n)
+(define (color-num-add c n)
   (make-color
    (+ (<color> r c) n)
    (+ (<color> g c) n)

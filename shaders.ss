@@ -10,7 +10,7 @@
       (vec-reverse V)))
 
 (define (reflect I N)
-  (vec-vec-sub I (vec-num-mul N (* 2 (vec-dot I N)))))
+  (vec-sub I (vec-num-mul N (* 2 (vec-dot I N)))))
 
 (define (sample-environment scene P R Kr depth)
   (pixel-color-from-ray scene
@@ -38,7 +38,7 @@
   (fold-lights [light scene] [color (make-color 0 0 0)]
     (let ([nondiff (light-property light '__nondiffuse)])
       (if (< nondiff 1)
-          (let ([L (vec-vec-sub (light-position light) intersect-point)])
+          (let ([L (vec-sub (light-position light) intersect-point)])
             (color-add color
               (color-num-mul (light-shade light)
                 (* (- 1 nondiff) (vec-dot (vec-normalize L) N)))))
@@ -49,8 +49,8 @@
   (fold-lights [light scene] [color (make-color 0 0 0)]
     (let ([nonspec (light-property light '__nonspecular)])
       (if (< nonspec 1)
-          (let ([L (vec-vec-sub (light-position light) intersect-point)])
-            (let ([H (vec-normalize (vec-vec-plus L eye))])
+          (let ([L (vec-sub (light-position light) intersect-point)])
+            (let ([H (vec-normalize (vec-add L eye))])
               (color-add color
                 (color-num-mul (light-shade light)
                   (* (- 1 nonspec)
