@@ -148,19 +148,17 @@
          [z (vec-k pnt)]
          [phi (+ 0.5 (/ (asin y) pi))]  ; [0-1]
          [xz-len (sqrt (+ (sqr x) (sqr z)))]
-         [theta 0])
-    (if (= 0 xz-len)
-        (set! theta 0)
-        (begin
-          (if (= 0 z)
-              (if (> x 0)
-                  (set! theta 0)
-                  (set! theta pi))
-              (begin
-                (set! theta (acos (/ x xz-len)))
-                (when (< z 0)
-                  (set! theta (- (* 2 pi) theta)))))
-          (set! theta (/ theta (* 2 pi))))) ; [0-1]
+         [theta (if (= 0 xz-len)        ; [0-1]
+                    0
+                    (/ (if (= 0 z)
+                           (if (> x 0)
+                               0
+                               pi)
+                           (let ([q (acos (/ x xz-len))])
+                             (if (< z 0)
+                                 (- (* 2 pi) q)
+                                 q)))
+                       (* 2 pi)))])
     (make-vec theta phi 0)))
 
 (define (plane-intersections object ray)
