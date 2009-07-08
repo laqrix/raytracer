@@ -21,13 +21,14 @@
     [,_ 0]))
 
 (define (in-shadow? point light-pos)
-  ;; TODO: need to limit intersections to between intersect point
-  ;; and light position
-  (pair? (find-intersections
+  (match (find-intersections
           (<ray> make
             [origin point]
             [direction (vec-sub light-pos point)])
-          scene)))
+          scene)
+    [() #f]
+    [(`(<intersect> [time ,t]) . ,_)
+     (not (or (< t 0) (> t 1)))]))
 
 (define-light ambient-light ([color (make-color 1 1 1)] [intensity 1])
   ([__ambient 1] [__nondiffuse 1] [__nonspecular 1])
