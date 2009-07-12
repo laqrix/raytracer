@@ -162,14 +162,11 @@
     (make-vec theta phi 0)))
 
 (define (plane-intersections object ray)
-  (let ([origin (<ray> origin ray)]
-        [direction (<ray> direction ray)])
-    (let ([t (- (/ (vec-k origin) (vec-k direction)))])
-      (if (and 
-           (<= (abs (+ (vec-i origin) (* t (vec-i direction)))) 1)
-           (<= (abs (+ (vec-j origin) (* t (vec-j direction)))) 1))
-          (list (<intersect> make [time t] [object object] [extra #f]))
-          '()))))
+  (list (<intersect> make
+          [time (- (/ (vec-k (<ray> origin ray))
+                      (vec-k (<ray> direction ray))))]
+          [object object]
+          [extra #f])))
 
 (define (plane-normal object extra intersect-point)
   (mat-vec-mul (object-M object) (make-vec 0 0 1)))
