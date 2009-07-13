@@ -41,8 +41,9 @@
 (define L)                              ; should really be in user env
 (define-syntax illuminate
   (syntax-rules ()
-    [(_ (from) body ...)
-     (let ([shadow (shadow-color intersect-point from)])
+    [(_ ($from) body ...)
+     (let* ([from $from]
+            [shadow (shadow-color intersect-point from)])
        (if (color=? shadow black)
            black
            (color-mul shadow
