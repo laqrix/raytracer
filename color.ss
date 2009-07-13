@@ -2,6 +2,18 @@
 
 (define (make-color r g b) (<color> make [r r] [g g] [b b]))
 
+(define black (make-color 0 0 0))
+(define white (make-color 1 1 1))
+
+(define transparent black)
+(define opaque white)
+
+(define (color=? c1 c2)
+  (or (eq? c1 c2)
+      (and (= (<color> r c1) (<color> r c2))
+           (= (<color> g c1) (<color> g c2))
+           (= (<color> b c1) (<color> b c2)))))
+
 (define color-add
   (case-lambda
    [(c1) c1]

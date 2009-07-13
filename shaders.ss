@@ -27,7 +27,7 @@
        (<scene> lights scene))]))
 
 (define-shader ambient ()
-  (fold-lights [light scene] [color (make-color 0 0 0)]
+  (fold-lights [light scene] [color black]
     (let ([amb (light-property light '__ambient)])
       (if (> amb 0)
           (color-add color (color-num-mul (light-shade light) amb))
@@ -35,7 +35,7 @@
 
 (define-shader diffuse ([N #f])
   ;; Surface shaders, L is from the surface to the light
-  (fold-lights [light scene] [color (make-color 0 0 0)]
+  (fold-lights [light scene] [color black]
     (let ([nondiff (light-property light '__nondiffuse)])
       (if (< nondiff 1)
           (let ([L (vec-sub (light-position light) intersect-point)])
@@ -46,7 +46,7 @@
 
 (define-shader specular ([N #f] [eye #f] [roughness #f])
   ;; Surface shaders, L is from the surface to the light
-  (fold-lights [light scene] [color (make-color 0 0 0)]
+  (fold-lights [light scene] [color black]
     (let ([nonspec (light-property light '__nonspecular)])
       (if (< nonspec 1)
           (let ([L (vec-sub (light-position light) intersect-point)])

@@ -7,7 +7,7 @@
     [distance 1]
     [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])
   (<scene> make
-    [background-color (make-color 0 0 0)]
+    [background-color black]
     [objects
      (list
       (sphere
@@ -29,7 +29,7 @@
      (list
       (distant-light
        [position (make-vec 0 240 -100)]
-       [color (make-color 1 1 1)]
+       [color white]
        [intensity 1])
       (distant-light
        [position (make-vec 640 240 -10000)]

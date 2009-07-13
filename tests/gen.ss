@@ -72,10 +72,10 @@
                  (sphere [center (make-vec 0 0 0)]
                    [radius 1]
                    [surface (matte)]
-                   [color (make-color 1 1 1)])
+                   [color white])
                  (plane
                   [center (make-vec 0 -1 0)]
-                  [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+                  [M (matrix-mul (rotate-x -90))]
                   (color (make-color 0 .6 0))
                   (surface (shiny-metal [Kr 0]))))]
                [lights (list ,expr)]))))))
@@ -161,10 +161,10 @@
                [lights
                 (list
                  (distant-light [position (make-vec -10 10 10)]
-                   [color (make-color 1 1 1)]
+                   [color white]
                    [intensity 1])
                  (distant-light [position (make-vec 10 -10 10)]
-                   [color (make-color 1 1 1)]
+                   [color white]
                    [intensity 1/4]))]))))))
    `(("sphere" . (sphere [color (make-color 0 1 0)] [surface (matte)]))
      ("plane" . (plane [color (make-color 0 1 0)] [surface (matte)]))
@@ -199,7 +199,7 @@
                [lights
                 (list
                  (distant-light [position (make-vec -1 1 10)]
-                   [color (make-color 1 1 1)]
+                   [color white]
                    [intensity 1]))]))))))
    '(("sphere" . #(1 1 1 0 0 0 0 0 0 -1))
      ("cylinder" . #(1 1 0 0 0 0 0 0 0 -1))
@@ -215,7 +215,7 @@
       [distance 1]
       [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
     (<scene> make
-      [background-color (make-color 0 0 0)]
+      [background-color black]
       [objects
        (list
         (sphere [center (make-vec -1 .8 0)]
@@ -233,7 +233,7 @@
       [lights
        (list
         (point-light [position (make-vec -5 0 5)]
-                     [color (make-color 1 1 1)]
+                     [color white]
                      [intensity 15])
         (point-light [position (make-vec 0 0 10)]
                      [color (make-color .6 .7 1)]
@@ -251,7 +251,7 @@
      (objects
       (list (plane
              [center (make-vec 0 -1 0)]
-             [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+             [M (matrix-mul (rotate-x -90))]
              (color (make-color 0 .6 0))
              (surface (shiny-metal [Kr 0])))
         (sphere
@@ -261,11 +261,11 @@
       (list
        (distant-light
         (position (make-vec -10 10 10))
-        (color (make-color 1 1 1))
+        (color white)
         (intensity .9))
        (point-light
         (position (make-vec 1 1 1))
-        (color (make-color 1 1 1))
+        (color white)
         (intensity 1)))))))
 
 (group shaders
@@ -419,7 +419,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (difference
@@ -435,11 +435,11 @@
         (list
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
 
   (build "csg-difference2"
@@ -455,7 +455,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (difference
@@ -472,11 +472,11 @@
         (list
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
 
   (build "csg-intersect"
@@ -492,7 +492,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (intersect
@@ -508,11 +508,11 @@
         (list
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
 
   (build "csg-intersect2"
@@ -528,7 +528,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (intersect
@@ -545,11 +545,11 @@
         (list
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
 
   (build "csg-union"
@@ -565,7 +565,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (union
@@ -581,11 +581,11 @@
          (list
           (distant-light
            (position (make-vec -10 10 10))
-           (color (make-color 1 1 1))
+           (color white)
            (intensity .9))
           (point-light
            (position (make-vec 1 1 1))
-           (color (make-color 1 1 1))
+           (color white)
            (intensity 1)))))))
 
   (build "csg-union2"
@@ -601,7 +601,7 @@
         (list
          (plane
           [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -75) (scale 3 3 1))]
+          [M (matrix-mul (rotate-x -90))]
           (color (make-color 0 .6 0))
           (surface (matte)))
          (union
@@ -618,11 +618,11 @@
         (list
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
 
   (build "csg-all"
@@ -633,7 +633,7 @@
          (<view> make (left -2) (right 2) (bottom -2) (top 2))))
       (<scene>
        make
-       (background-color (make-color 1 1 1))
+       (background-color white)
        (objects
         (list
          (difference
@@ -663,11 +663,11 @@
          (ambient-light [intensity 0.3])
          (distant-light
           (position (make-vec -10 10 10))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity .9))
          (point-light
           (position (make-vec 1 1 1))
-          (color (make-color 1 1 1))
+          (color white)
           (intensity 1)))))))
   )
 

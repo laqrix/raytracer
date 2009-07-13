@@ -29,7 +29,7 @@
        (sample-environment scene intersect-point R Kr depth)))))
 
 (define-shader plastic ([Ks .5] [Kd .5] [Ka 1] [roughness .1]
-                        [specularcolor (make-color 1 1 1)])
+                        [specularcolor white])
   (let ([Nf (faceforward (vec-normalize normal) incoming)]
         [V  (vec-normalize (vec-reverse incoming))])
     (color-add
@@ -41,8 +41,7 @@
       (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
       specularcolor))))
 
-(define-shader stripes ([Kd 1] [Ka .5] [frequency 10]
-                        [blackcolor (make-color 0 0 0)])
+(define-shader stripes ([Kd 1] [Ka .5] [frequency 10] [blackcolor black])
   (let ([pnt (point->surface object intersect-point)]
         [Nf (faceforward (vec-normalize normal) incoming)])
     (let* ([t (vec-j pnt)]
@@ -55,8 +54,7 @@
          (color-num-mul ((ambient)) Ka)
          (color-num-mul ((diffuse [N Nf])) Kd))))))
 
-(define-shader checker ([Kd 1] [Ka .5] [frequency 4]
-                        [blackcolor (make-color 0 0 0)])
+(define-shader checker ([Kd 1] [Ka .5] [frequency 4] [blackcolor black])
   (let ([pnt (point->surface object intersect-point)]
         [Nf (faceforward (vec-normalize normal) incoming)])
     (let ([xmod (fmod (* (vec-i pnt) frequency) (+ 1 EPSILON))]
@@ -93,7 +91,7 @@
      (sample-environment scene intersect-point R Kr depth))))
 
 (define-shader simple-texmap
-  ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor (make-color 1 1 1)]
+  ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor white]
    [texture #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
   (let* ([st (point->texture object
@@ -125,7 +123,7 @@
     (normals ss tt)))
 
 (define-shader marble
-  ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor (make-color 1 1 1)]
+  ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor white]
    [octaves 6] [lacunarity 2] [gain .5]
    [colorlist 
     (list 
@@ -245,18 +243,18 @@
                              (vec-dot normal normal)))
                    attenuation)])
           (values (color-num-mul Cs n) (make-color n n n)))
-        (values Cs (make-color 0 0 0)))))
+        (values Cs transparent))))
 
 (define-shader screen
-  ([Ks .5] [Kd .5] [Ka .1] [roughness .1] [specularcolor (make-color 1 1 1)]
+  ([Ks .5] [Kd .5] [Ka .1] [roughness .1] [specularcolor white]
    [density .25] [frequency 20])
   (let ([Nf (faceforward (vec-normalize normal) incoming)]
         [V  (vec-normalize (vec-reverse incoming))])
     (let ([st (point->texture object (point->surface object intersect-point))])
       (let ([Oi (if (or (< (fmod (* (vec-i st) frequency) 1) density)
                         (< (fmod (* (vec-j st) frequency) 1) density))
-                    (make-color 1 1 1)
-                    (make-color 0 0 0))])
+                    opaque
+                    transparent)])
         (values
          (color-add
           (color-mul Oi Cs

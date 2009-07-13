@@ -67,40 +67,38 @@
 
 (define (pixel-color-from-ray scene ray Kr depth)
   (if (or (= depth 0) (<= Kr 0))
-      (make-color 0 0 0)
+      black
       (let lp ([ls (find-intersections ray scene)])
         (if (null? ls)
             (<scene> background-color scene)
-            (let ([first (car ls)])
-              (match first
-                [`(<intersect> [time ,t] [object ,obj] [extra ,extra])
-                 (let ([incoming (<ray> direction ray)]
-                       [intersect-point (traverse-ray ray t)])
-                   (let-values ([(intersect-point normal)
-                                 (object-displace obj intersect-point
-                                   (object-normal obj extra intersect-point))])
-                     (let-values ([(color opacity)
-                                   (object-shade scene obj extra intersect-point
-                                     normal
-                                     incoming
-                                     depth)])
-                       (let ([rest (cdr ls)]
-                             [color (color-num-mul color Kr)])
-                         (if (opaque? opacity)
-                             color
-                             (cond
-                              [(object-volume obj) =>
-                               (lambda (shader)
-                                 (let-values ([(vol-color vol-opacity)
-                                               (volume-shade obj
-                                                 intersect-point incoming
-                                                 color opacity)])
-                                   (let ([color (color-add color vol-color)])
-                                     (if (opaque? vol-opacity)
-                                         color
-                                         (color-add color (lp rest))))))]
-                              [else
-                               (color-add color (lp rest))]))))))]))))))
+            (match ls
+              [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
+               (let ([incoming (<ray> direction ray)]
+                     [intersect-point (traverse-ray ray t)])
+                 (let-values ([(intersect-point normal)
+                               (object-displace obj intersect-point
+                                 (object-normal obj extra intersect-point))])
+                   (let-values ([(color opacity)
+                                 (object-shade scene obj extra intersect-point
+                                   normal
+                                   incoming
+                                   depth)])
+                     (let ([color (color-num-mul color Kr)])
+                       (if (opaque? opacity)
+                           color
+                           (cond
+                            [(object-volume obj) =>
+                             (lambda (shader)
+                               (let-values ([(vol-color vol-opacity)
+                                             (volume-shade obj
+                                               intersect-point incoming
+                                               color opacity)])
+                                 (let ([color (color-add color vol-color)])
+                                   (if (opaque? vol-opacity)
+                                       color
+                                       (color-add color (lp rest))))))]
+                            [else
+                             (color-add color (lp rest))]))))))])))))
 
 (define (ray-gun width height camera)
   (define view (<camera> view camera))
@@ -151,8 +149,8 @@
 
 ;; Scene Syntax
 
-(define-defaults sphere ([color (make-color 1 1 1)]
-                         [opacity (make-color 1 1 1)]
+(define-defaults sphere ([color white]
+                         [opacity opaque]
                          [surface #f] [volume #f] [displacement #f]
                          [center (make-vec 0 0 0)]
                          [radius 1]
@@ -161,16 +159,16 @@
     (make-sphere color opacity surface volume displacement
       center M (matrix-inverse M))))
 
-(define-defaults plane ([color (make-color 1 1 1)]
-                        [opacity (make-color 1 1 1)]
+(define-defaults plane ([color white]
+                        [opacity opaque]
                         [surface #f] [volume #f] [displacement #f]
                         [center (make-vec 0 0 0)]
                         [M (matrix-identity 3)])
   (make-plane color opacity surface volume displacement
     center M (matrix-inverse M)))
 
-(define-defaults tetrahedron ([color (make-color 1 1 1)]
-                              [opacity (make-color 1 1 1)]
+(define-defaults tetrahedron ([color white]
+                              [opacity opaque]
                               [surface #f] [volume #f] [displacement #f]
                               [center (make-vec 0 0 0)]
                               [M (matrix-identity 3)])
@@ -182,8 +180,8 @@
      (make-vec 1 1 -1)
      (make-vec 1 -1 1))))
 
-(define-defaults cube ([color (make-color 1 1 1)]
-                       [opacity (make-color 1 1 1)]
+(define-defaults cube ([color white]
+                       [opacity opaque]
                        [surface #f] [volume #f] [displacement #f]
                        [center (make-vec 0 0 0)]
                        [M (matrix-identity 3)])
@@ -194,8 +192,8 @@
      (make-vec 0 1 0) (make-vec 0 -1 0)
      (make-vec 1 0 0) (make-vec -1 0 0))))
 
-(define-defaults octahedron ([color (make-color 1 1 1)]
-                             [opacity (make-color 1 1 1)]
+(define-defaults octahedron ([color white]
+                             [opacity opaque]
                              [surface #f] [volume #f] [displacement #f]
                              [center (make-vec 0 0 0)]
                              [M (matrix-identity 3)])
@@ -211,8 +209,8 @@
      (make-vec -1 -1 -1)
      (make-vec 1 -1 -1))))
 
-(define-defaults icosahedron ([color (make-color 1 1 1)]
-                              [opacity (make-color 1 1 1)]
+(define-defaults icosahedron ([color white]
+                              [opacity opaque]
                               [surface #f] [volume #f] [displacement #f]
                               [center (make-vec 0 0 0)]
                               [M (matrix-identity 3)])
@@ -244,8 +242,8 @@
        (make-vec nt nt t)
        (make-vec -1 0 nst)))))
   
-(define-defaults quadric ([color (make-color 1 1 1)]
-                          [opacity (make-color 1 1 1)]
+(define-defaults quadric ([color white]
+                          [opacity opaque]
                           [surface #f] [volume #f] [displacement #f]
                           [center (make-vec 0 0 0)]
                           [M (matrix-identity 3)]
@@ -257,8 +255,8 @@
   (make-quadric color opacity surface volume displacement
     center M (matrix-inverse M) coefficients))
 
-(define-defaults union ([color (make-color 1 1 1)]
-                        [opacity (make-color 1 1 1)]
+(define-defaults union ([color white]
+                        [opacity opaque]
                         [surface #f] [volume #f] [displacement #f]
                         [center (make-vec 0 0 0)]
                         [M (matrix-identity 3)]
@@ -267,8 +265,8 @@
   (make-csg-union color opacity surface volume displacement
     center M (matrix-inverse M) A B))
 
-(define-defaults intersect ([color (make-color 1 1 1)]
-                            [opacity (make-color 1 1 1)]
+(define-defaults intersect ([color white]
+                            [opacity opaque]
                             [surface #f] [volume #f] [displacement #f]
                             [center (make-vec 0 0 0)]
                             [M (matrix-identity 3)]
@@ -277,8 +275,8 @@
   (make-csg-intersect color opacity surface volume displacement
     center M (matrix-inverse M) A B))
 
-(define-defaults difference ([color (make-color 1 1 1)]
-                             [opacity (make-color 1 1 1)]
+(define-defaults difference ([color white]
+                             [opacity opaque]
                              [surface #f] [volume #f] [displacement #f]
                              [center (make-vec 0 0 0)]
                              [M (matrix-identity 3)]
