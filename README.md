@@ -12,10 +12,10 @@ This will load 'simple.ss' for the scene. Output will go to 'simple.tga'.
 Features:
 
   - Objects: sphere, plane, general quadrics, general polyhedra, cube, 
-             tetrahedron, octahedron, icosahedron
+    tetrahedron, octahedron, icosahedron
   - CSG: union, intersect, difference
   - Shaders: constant, matte, metal, shiny-metal, plastic, stripes, checker,
-             mirror, marble, granite, wood, glow, screen (wireframe)
+    mirror, marble, granite, wood, glow, screen (wireframe)
   - Lights: ambient, distant, point, spot
 
 Less stable features:
@@ -26,6 +26,8 @@ Less stable features:
   - Displacement shaders
 
 Things to do:
+
+- Camera blur / depth of field
 
 - Shadows thru transparent objects need work.
 
@@ -47,3 +49,7 @@ Things to do:
   - depth-cue
   - fog
   - smoke
+
+- Build a physics engine to help generate raytracer scenes. Imagine
+  modelling marbles dropped into a glass then rendering 1 or more
+  frames in time.
