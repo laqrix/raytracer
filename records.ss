@@ -1,22 +1,24 @@
+(define source-rtd
+  (let-values ([(src start?) (#%$syntax->src #'*)])
+    (record-rtd src)))
+(define source-sfd (csv7:record-field-accessor source-rtd 'sfd))
+(define source-bfp (csv7:record-field-accessor source-rtd 'bfp))
+
+(define source-file-descriptor-rtd
+    (let-values ([(src start?) (#%$syntax->src #'*)])
+      (record-rtd (source-sfd src))))
+(define source-file-descriptor-name
+    (csv7:record-field-accessor source-file-descriptor-rtd 'name))
+
 (define (find-source x)
-  (call/cc
-   (lambda (return)
-     (parameterize
-      ([#%$source-error-handler
-        (lambda (who src start? msg . args)
-          (let* ([source-rtd (record-type-descriptor src)]
-                 [source-sfd (record-field-accessor source-rtd 'sfd)]
-                 [source-bfp (record-field-accessor source-rtd 'bfp)]
-                 [source-efp (record-field-accessor source-rtd 'efp)]
-                 [sfd (source-sfd src)]
-                 [fp (if start? (source-bfp src) (source-efp src))])
-            (call-with-values (lambda () (#%$locate-source sfd fp))
-              (case-lambda
-               [() (return "")]
-               [(path line char)
-                (return (format " at line ~d of ~a" line path))]))))]
-       [error-handler (lambda (who what . args) (return ""))])
-      (syntax-error x "no source information for")))))
+  (let-values ([(src start?) (#%$syntax->src x)])
+    (if src
+        (datum->syntax #'quote
+          (format " ~a offset ~a of ~a"
+            (if (eq? start? 'near) 'near 'at)
+            (if start? (source-bfp src) (source-efp src))
+            (source-file-descriptor-name (source-sfd src))))
+        #'"")))
 
 (define (identifier-symbol-eq? x y)
   (eq? (syntax->datum x) (syntax->datum y)))
@@ -25,10 +27,9 @@
   (define-syntax (match x)
     (syntax-case x ()
       [(_ exp (pattern b1 b2 ...) ...)
-       (with-syntax ([src (datum->syntax #'_ (find-source x))])
-         #'(let ([x exp])
-             ((or ($match x pattern b1 b2 ...) ...
-                  (error 'match "no matching clause for ~s~a" x src)))))]))
+       #`(let ([x exp])
+           ((or ($match x pattern b1 b2 ...) ...
+                (errorf 'match "no matching clause for ~s~a" x #,(find-source x)))))]))
   
   (define-syntax $match
     (syntax-rules (guard)
@@ -40,12 +41,12 @@
   (define-syntax (match-help x)
     (define (bad-pattern p)
       (syntax-error p "invalid match pattern"))
-    (syntax-case x (unquote _ unquote-splicing quasiquote)
-      [(match-help e (unquote _) body) #'body]
+    (syntax-case x (unquote unquote-splicing quasiquote)
       [(match-help e (unquote v) body)
-       (if (identifier? #'v)
-           #'(let ([v e]) body)
-           (bad-pattern #'(unquote v)))]
+       (cond
+        [(eq? (datum v) '_) #'(begin e body)]
+        [(identifier? #'v) #'(let ([v e]) body)]
+        [else (bad-pattern #'(unquote v))])]
       [(match-help e (unquote-splicing v) body)
        (if (identifier? #'v)
            #'(and (equal? e v) body)
@@ -174,7 +175,7 @@
                  (valid-bindings? #'bindings '()))
             #`(let ([src e])
                 (unless (name is? src)
-                  (error 'record-copy "~s is not a ~a~a" src 'name
+                  (errorf 'record-copy "~s is not a ~a~a" src 'name
                     #,(find-source x)))
                 (vector 'name #,@(copy-record #'(field ...) 1 #'bindings)))]
            [(name is? e)
@@ -187,7 +188,7 @@
             (identifier-symbol-eq? #'fn #'field)
             #`(let ([x e])
                 (unless (name is? x)
-                  (error 'record-ref "~s is not a ~a~a" x 'name
+                  (errorf 'record-ref "~s is not a ~a~a" x 'name
                     #,(find-source x)))
                 (#3%vector-ref x #,(find-index #'fn #'(field ...) 1)))]
            ...

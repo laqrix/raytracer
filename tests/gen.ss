@@ -1,5 +1,3 @@
-(case-sensitive #t)
-
 (define sources '())
 (define groups (make-eq-hashtable))
 
@@ -201,10 +199,10 @@
                  (distant-light [position (make-vec -1 1 10)]
                    [color white]
                    [intensity 1]))]))))))
-   '(("sphere" . #(1 1 1 0 0 0 0 0 0 -1))
-     ("cylinder" . #(1 1 0 0 0 0 0 0 0 -1))
-     ("cone" . #(1 1 -1 0 0 0 0 0 0 0))
-     ("hyperboloid" . #(1 1 -1 0 0 0 0 0 0 -1))))
+   '(("sphere" . '#(1 1 1 0 0 0 0 0 0 -1))
+     ("cylinder" . '#(1 1 0 0 0 0 0 0 0 -1))
+     ("cone" . '#(1 1 -1 0 0 0 0 0 0 0))
+     ("hyperboloid" . '#(1 1 -1 0 0 0 0 0 0 -1))))
   )
 
 (build "spheres"
@@ -650,14 +648,14 @@
               [M (scale .5 .5 .5)]
               [surface (plastic)]
               [color (make-color 0 1 0)]
-              [A (quadric [coefficients #(1 1 0 0 0 0 0 0 0 -1)])]
+              [A (quadric [coefficients '#(1 1 0 0 0 0 0 0 0 -1)])]
               [B (union
                   [A (quadric
                       [M (rotate-y 90)]
-                      [coefficients #(1 1 0 0 0 0 0 0 0 -1)])]
+                      [coefficients '#(1 1 0 0 0 0 0 0 0 -1)])]
                   [B (quadric
                       [M (rotate-x 90)]
-                      [coefficients #(1 1 0 0 0 0 0 0 0 -1)])])])])))
+                      [coefficients '#(1 1 0 0 0 0 0 0 0 -1)])])])])))
        (lights
         (list
          (ambient-light [intensity 0.3])

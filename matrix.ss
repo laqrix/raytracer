@@ -2,7 +2,7 @@
   (let ([store (make-vector (fx* m n))])
     (define (index i j)
       (unless (and (fx<= 1 i m) (fx<= 1 j n))
-        (error #f "matrix index (~a, ~a) out of bounds (~a, ~a)" i j m n))
+        (errorf #f "matrix index (~a, ~a) out of bounds (~a, ~a)" i j m n))
       (fx+ (fx* (fx- i 1) n) j -1))
     (initializer m n
      (case-lambda
@@ -44,7 +44,7 @@
     (let-values ([(m1 n1) (matrix-dimensions a1)]
                  [(m2 n2) (matrix-dimensions a2)])
       (unless (and (fx= m1 m2) (fx= n1 n2))
-        (error 'matrix-add "mismatched sizes"))
+        (errorf 'matrix-add "mismatched sizes"))
       (make-matrix m1 n1
         (lambda (m n a)
           (do ([i 1 (fx+ i 1)]) ((fx> i m))
@@ -58,7 +58,7 @@
     (let-values ([(m1 n1) (matrix-dimensions a1)]
                  [(m2 n2) (matrix-dimensions a2)])
       (unless (and (fx= m1 m2) (fx= n1 n2))
-        (error 'matrix-sub "mismatched sizes"))
+        (errorf 'matrix-sub "mismatched sizes"))
       (make-matrix m1 n1
         (lambda (m n a)
           (do ([i 1 (fx+ i 1)]) ((fx> i m))
@@ -73,7 +73,7 @@
     (let-values ([(m1 n1) (matrix-dimensions a1)]
                  [(m2 n2) (matrix-dimensions a2)])
       (unless (fx= n1 m2)
-        (error 'matrix-mul "mismatched sizes"))
+        (errorf 'matrix-mul "mismatched sizes"))
       (make-matrix m1 n2
         (lambda (m n a)
           (do ([i 1 (fx+ i 1)]) ((fx> i m))
@@ -95,7 +95,7 @@
 (define (ludcmp a0)
   (let-values ([(m n) (matrix-dimensions a0)])
     (unless (fx= m n)
-      (error 'ludcmp "matrix must be square"))
+      (errorf 'ludcmp "matrix must be square"))
     (let* ([indx (make-vector n)]
            [d 1]
            [a 
@@ -113,7 +113,7 @@
                         (let ([x (a0 i j)])
                           (a i j x)
                           (lp (fx+ j 1) (max (abs x) big)))]
-                       [(zero? big) (error 'ludcmp "singular matrix")]
+                       [(zero? big) (errorf 'ludcmp "singular matrix")]
                        [else (set-vv! i (/ big))])))
                   ;; Loop over columns of Crout's method
                   (do ([j 1 (fx+ j 1)]) ((fx> j n))
@@ -145,7 +145,7 @@
                           (set-vv! imax (vv-ref j)))
                         (vector-set! indx (fx- j 1) imax)
                         (when (zero? (a j j))
-                          (error 'ludcmp "singular matrix"))
+                          (errorf 'ludcmp "singular matrix"))
                         (unless (fx= j n)
                           (let ([pivot (/ (a j j))])
                             (do ([i (fx+ j 1) (fx+ i 1)]) ((fx> i n))
@@ -155,7 +155,7 @@
 (define (lubksb a indx b)
   (let-values ([(m n) (matrix-dimensions a)])
     (unless (fx= m n)
-      (error 'lubksb "matrix must be square"))
+      (errorf 'lubksb "matrix must be square"))
     (let lp ([i 1] [ii #f])
       (when (fx<= i n)
         (let* ([ip (vector-ref indx (fx- i 1))]

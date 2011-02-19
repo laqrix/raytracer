@@ -197,18 +197,18 @@
   (if (<= x 1.0)
       (match ls [(,p1 ,p2 ,p3 ,p4 . ,_) (catmull-rom x p1 p2 p3 p4)])
       (spline-helper (- x 1) (cdr ls))))
-      
+
 (define (spline x ls)
   (let ([edges (- (length ls) 3)])
     (when (< edges 1)
-      (error 'spline "not enough edges to spline points"))
+      (errorf 'spline "not enough edges to spline points"))
     (spline-helper (* x edges) ls)))
 
 (define (make-spline ls)
   (let ([edges (- (length ls) 3)])
     (when (< edges 1)
-      (error 'spline "not enough edges to spline points"))
+      (errorf 'spline "not enough edges to spline points"))
     (lambda (x)
       (when (or (< x 0.0) (> x 1.0))
-        (error 'spline "param is out of range: ~a" x))
+        (errorf 'spline "param is out of range: ~a" x))
       (spline-helper (* x edges) ls))))

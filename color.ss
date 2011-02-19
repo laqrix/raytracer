@@ -65,5 +65,5 @@
 (define (color-spline x ls)
   (let ([edges (- (length ls) 3)])
     (when (< edges 1)
-      (error 'color-spline "not enough edges to spline colors"))
+      (errorf 'color-spline "not enough edges to spline colors"))
     (color-spline-helper (* x edges) ls)))

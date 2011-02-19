@@ -1,4 +1,3 @@
-(case-sensitive #t)
 (module (define-scheme-record)
   (import scheme)
   (define-syntax define-scheme-record (identifier-syntax define-record)))
@@ -58,7 +57,7 @@
     (if shader
         (fluid-let ([light l])
           (shader))
-        (error 'light-shade "no light shader defined for ~a" l))))
+        (errorf 'light-shade "no light shader defined for ~a" l))))
 
 (define (opaque? opacity)
   (and (>= (<color> r opacity) 1)
@@ -249,9 +248,9 @@
                           [M (matrix-identity 3)]
                           [coefficients #f])
   (unless (vector? coefficients)
-    (error 'quadric "coefficients are not a vector: ~s" coefficients))
+    (errorf 'quadric "coefficients are not a vector: ~s" coefficients))
   (unless (= (vector-length coefficients) 10)
-    (error 'quadric "incorrect number of coefficients: ~s" coefficients))
+    (errorf 'quadric "incorrect number of coefficients: ~s" coefficients))
   (make-quadric color opacity surface volume displacement
     center M (matrix-inverse M) coefficients))
 

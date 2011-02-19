@@ -28,7 +28,7 @@
     [(csg-union? object) csg-union-intersections]
     [(csg-intersect? object) csg-intersect-intersections]
     [(csg-difference? object) csg-difference-intersections]
-    [else (error 'object-intersections "unknown object type: ~s" object)])
+    [else (errorf 'object-intersections "unknown object type: ~s" object)])
    object
    (<ray> make
      [origin (mat-vec-mul (object-Mi object)
@@ -42,7 +42,7 @@
     [(polyhedron? object) polyhedron-normal]
     [(quadric? object) quadric-normal]
     [(csg? object) csg-normal]
-    [else (error 'object-normal "unknown object type: ~s" object)])
+    [else (errorf 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
 
 (define object)                         ; should really be in user env
@@ -87,7 +87,7 @@
     (object-shade s (<intersect> object extra) (<intersect> extra extra)
       ip norm i d)]
    [else
-    (error 'object-shade "no object shader defined for ~a" obj)]))
+    (errorf 'object-shade "no object shader defined for ~a" obj)]))
 
 (define Ci)                             ; should really be in user env
 (define Oi)                             ; should really be in user env
@@ -119,7 +119,7 @@
   (cond
    [(sphere? object) (sphere-point->texture object point)]
    [(plane? object) (plane-point->texture object point)]
-   [else (error 'point->texture "unknown object type: ~s" object)]))
+   [else (errorf 'point->texture "unknown object type: ~s" object)]))
 
 (define (sphere-intersections object ray)
   (let ([origin (<ray> origin ray)]
@@ -294,7 +294,7 @@
              (union (append (list a1 b2) (cddr a)) b)]
             [(and (< cb1 ca1) (> ca2 cb2)) ; A and B cross, B first
              (union a (append (list b1 a2) (cddr b)))]
-            [else (error 'union "Unhandled condition A=~s, B=~s" a b)])))]))))
+            [else (errorf 'union "Unhandled condition A=~s, B=~s" a b)])))]))))
 
 (define (csg-intersect-intersections object ray)
   (map
@@ -331,7 +331,7 @@
             [(and (< cb1 ca1) (> ca2 cb2)) ; A and B cross, B first
              (intersection (append (list a1 b2 b2 a2) (cddr a))
                (append (list b1 a1 a1 b2) (cddr b)))]
-            [else (error 'intersection "Unhandled condition A=~s, B=~s" a b)])))]))))
+            [else (errorf 'intersection "Unhandled condition A=~s, B=~s" a b)])))]))))
 
 (define (csg-difference-intersections object ray)
   (map
@@ -366,7 +366,7 @@
              (difference (append (list b2 a2) (cddr a)) b)]
             [(and (= ca1 cb1) (= ca2 cb2)) ; A and B are exactly the same
              (difference (cddr a) (cddr b))]
-            [else (error 'difference "Unhandled condition ca1=~s, ca2=~s, cb1=~s, cb2=~s" ca1 ca2 cb1 cb2)])))]))))
+            [else (errorf 'difference "Unhandled condition ca1=~s, ca2=~s, cb1=~s, cb2=~s" ca1 ca2 cb1 cb2)])))]))))
 
 (define (csg-normal object extra intersect-point)
   ;;(mat-vec-mul (object-M object)
