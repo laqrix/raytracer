@@ -116,7 +116,8 @@
         (cond
          [(= image-type 2)              ; Uncompressed
           (assert (= 0 image-descriptor)
-            (errorf #f "Image Descriptor: ~a not handled in uncompressed mode"))
+            (errorf #f "Image Descriptor: ~a not handled in uncompressed mode"
+              image-descriptor))
           (make-image width height xo yo
             (lambda (set-pixel)
               (do ([y 0 (+ y 1)]) ((= y height))
