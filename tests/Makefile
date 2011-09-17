@@ -4,12 +4,12 @@ scheme := petite
 all: render
 
 .src: gen.ss
-	$(scheme) $<
+	$(scheme) -q $<
 
 include .src
 
 %.tga: %.scene run.ss
-	echo '(load "$<")' | $(scheme) run.ss
+	echo '(load "$<")' | $(scheme) -q run.ss
 
 .PHONY: render
 render: $(src:.scene=.tga) run.ss
