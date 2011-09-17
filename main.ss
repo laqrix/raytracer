@@ -64,7 +64,9 @@
        (>= (<color> g opacity) 1)
        (>= (<color> b opacity) 1)))
 
+(define ray-count 0)
 (define (pixel-color-from-ray scene ray Kr depth)
+  (set! ray-count (fx+ ray-count 1))
   (if (or (= depth 0) (<= Kr 0))
       black
       (let lp ([ls (find-intersections ray scene)])
@@ -143,8 +145,24 @@
             (set-pixel x y (pixel-color-from-ray scene (shoot-ray x y) 1 depth))))))))
 
 (define (render f filename width height camera scene)
-  (let ([image (time (f width height camera scene MAXDEPTH))])
+  (let* ([rc ray-count]
+         [s (statistics)]
+         [image (f width height camera scene MAXDEPTH)]
+         [d (sstats-difference (statistics) s)]
+         [rcd (- ray-count rc)])
+    (write-stats filename rcd d)
     (write-tga image filename)))
+
+(define (write-stats filename rcd d)
+  (call-with-output-file (string-append filename ".stats")
+    (lambda (op)
+      (fprintf op "~a,~a,~a,~a,~a,~a,~a,~a,~a\n"
+        filename rcd
+        (sstats-gc-count d)
+        (sstats-cpu d) (sstats-gc-cpu d)
+        (sstats-real d) (sstats-gc-real d)
+        (sstats-bytes d) (sstats-gc-bytes d)))
+    'replace))
 
 ;; Scene Syntax
 
