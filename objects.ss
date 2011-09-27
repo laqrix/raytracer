@@ -141,24 +141,16 @@
   (vec-sub intersect-point (object-center object)))
 
 (define (sphere-point->texture object point)
-  (let* ([pnt (vec-normalize point)]
-         [x (vec-i pnt)]
-         [y (vec-j pnt)]
-         [z (vec-k pnt)]
-         [phi (+ 0.5 (/ (asin y) pi))]  ; [0-1]
-         [xz-len (sqrt (+ (sqr x) (sqr z)))]
-         [theta (if (= 0 xz-len)        ; [0-1]
-                    0
-                    (/ (if (= 0 z)
-                           (if (> x 0)
-                               0
-                               pi)
-                           (let ([q (acos (/ x xz-len))])
-                             (if (< z 0)
-                                 (- (* 2 pi) q)
-                                 q)))
-                       (* 2 pi)))])
-    (make-vec theta phi 0)))
+  (let* ([N (make-vec 0 0 1)]
+         [E (make-vec 1 0 0)]
+         [P (vec-normalize point)]
+         [phi (acos (- (vec-dot N P)))]
+         [v (/ phi pi)]
+         [theta (/ (acos (/ (vec-dot P E) (sin phi))) (* 2 pi))]
+         [u (if (> (vec-dot (vec-cross N E) P) 0)
+                theta
+                (- 1 theta))])
+    (make-vec u v 0)))
 
 (define (plane-intersections object ray)
   (list (<intersect> make
