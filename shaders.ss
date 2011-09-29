@@ -4,10 +4,10 @@
      (define-defaults name ([field default] ...)
        (lambda () b1 b2 ...))]))
 
-(define (faceforward V R)
-  (if (< (vec-dot V R) (/ pi 4))
-      V
-      (vec-reverse V)))
+(define (faceforward N I)
+  (if (> (vec-dot I N) 0)
+      (vec-reverse N)
+      N))
 
 (define (reflect I N)
   (vec-sub I (vec-num-mul N (* 2 (vec-dot I N)))))

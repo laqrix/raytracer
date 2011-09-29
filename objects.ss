@@ -138,8 +138,7 @@
           '()))))
 
 (define (sphere-normal object extra intersect-point)
-  (mat-vec-mul (object-M object)
-    (vec-sub intersect-point (object-center object))))
+  (vec-sub intersect-point (object-center object)))
 
 (define (sphere-point->texture object point)
   (let* ([pnt (vec-normalize point)]
@@ -369,8 +368,7 @@
             [else (errorf 'difference "Unhandled condition ca1=~s, ca2=~s, cb1=~s, cb2=~s" ca1 ca2 cb1 cb2)])))]))))
 
 (define (csg-normal object extra intersect-point)
-  ;;(mat-vec-mul (object-M object)
+  (mat-vec-mul (object-M object)
     (object-normal (<intersect> object extra)
       (<intersect> extra extra)
-      intersect-point))
-  ;;)
+      (mat-vec-mul (object-Mi object) intersect-point))))
