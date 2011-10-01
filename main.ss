@@ -133,13 +133,17 @@
           [direction (vec-normalize
                       (vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
 
+(define E)                              ; should really be in user env
 (define (image-simple width height camera scene depth)
   (let ([shoot-ray (ray-gun width height camera)])
     (make-image width height 0 0
       (lambda (set-pixel)
         (do ([y 0 (+ y 1)]) ((= y height))
           (do ([x 0 (+ x 1)]) ((= x width))
-            (set-pixel x y (pixel-color-from-ray scene (shoot-ray x y) 1 depth))))))))
+            (let ([ray (shoot-ray x y)])
+              (fluid-let ([E (<ray> origin ray)])
+                (set-pixel x y
+                  (pixel-color-from-ray scene ray 1 depth))))))))))
 
 (define (render f filename width height camera scene)
   (let ([image (time (f width height camera scene MAXDEPTH))])
