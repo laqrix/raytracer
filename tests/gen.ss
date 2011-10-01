@@ -215,27 +215,26 @@
     (<scene> make
       [background-color black]
       [objects
-       (list
-        (sphere [center (make-vec -1 .8 0)]
-                [radius 1]
-                [surface (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
-                [color (make-color 1 1 0)])
-        (sphere [center (make-vec 1 .8 0)]
-                [radius 1]
-                [surface (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
-                [color (make-color 0 1 1)])
-        (sphere [center (make-vec 0 -1 0)]
-                [radius 1]
-                [surface (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
-                [color (make-color 1 0 1)]))]
+       (map
+        (lambda (i c)
+          (define ang (+ (* i 2/3 pi) (* 1/6 pi)))
+          (sphere
+           [center (make-vec (cos ang) (sin ang) 0)]
+           [radius 1]
+           [surface (shiny-metal [Ka 0] [Kd 1] [Kr .5] [roughness 1])]
+           [color c]))
+        (list 0 1 2)
+        (list (make-color 0 1 1) (make-color 1 1 0) (make-color 1 0 1)))]
       [lights
        (list
-        (point-light [position (make-vec -5 0 5)]
-                     [color white]
-                     [intensity 15])
-        (point-light [position (make-vec 0 0 10)]
-                     [color (make-color .6 .7 1)]
-                     [intensity 10]))])))
+        (distant-light
+         (position (make-vec -4 0 1))
+         (color white)
+         (intensity .5))
+        (distant-light
+         (position (make-vec 4 0 100))
+         (color (make-color 0.6 0.7 1))
+         (intensity .5)))])))
 
 (build "metal-ball"
   (render image-simple "metal-ball" 128 128
