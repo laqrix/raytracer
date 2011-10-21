@@ -309,7 +309,8 @@
      ("granite" . (granite))
      ("wood" . (wood))
      ("glow" . (glow))
-     ("screen" . (screen))))
+     ("screen" . (screen))
+     ("glass" . (glass))))
   )
 
 (group transparent
@@ -359,7 +360,8 @@
      ("granite" . (granite))
      ("wood" . (wood))
      ("glow" . (glow))
-     ("screen" . (screen))))
+     ("screen" . (screen))
+     ("glass" . (glass))))
   )
 
 (group textures

@@ -12,6 +12,41 @@
 (define (reflect I N)
   (vec-sub I (vec-num-mul N (* 2 (vec-dot I N)))))
 
+(define (refract I N eta)
+  ;; eta = external index of refraction / internal index of refraction
+  (let* ([IdotN (vec-dot I N)]
+         [k (- 1 (* (sqr eta) (- 1 (sqr IdotN))))])
+    (if (< k 0)
+        (make-vec 0 0 0)
+        (vec-sub (vec-num-mul I eta)
+          (vec-num-mul N (+ (* eta IdotN) (sqrt k)))))))
+
+(define (fresnel I N eta)
+  (define internal-index 1)
+  (let* ([external-index eta]
+         [N (vec-reverse N)] ;; Reverse N, but it's not entirely clear why.
+         [cos-theta1 (vec-dot I N)]
+         [k (- 1 (* (sqr eta) (- 1 (sqr cos-theta1))))]
+         [reflection (vec-sub I (vec-num-mul N (* 2 cos-theta1)))])
+    (if (< k EPSILON)
+        (values 1 0 reflection (make-vec 0 0 0))
+        (let* ([cos-theta2 (sqrt k)]
+               [refraction (vec-add (vec-num-mul I eta)
+                             (vec-num-mul N (- cos-theta2 (* eta cos-theta1))))]
+               [rs (sqr (/ (- (* external-index cos-theta1)
+                              (* internal-index cos-theta2))
+                           (+ (* external-index cos-theta1)
+                              (* internal-index cos-theta2))))]
+               [rp (sqr (/ (- (* internal-index cos-theta1)
+                              (* external-index cos-theta2))
+                           (+ (* internal-index cos-theta1)
+                              (* external-index cos-theta2))))]
+               [r (/ (+ rs rp) 2)]
+               [t (/ (/ (+ (- 1 rs) (- 1 rp)) 2)
+                     (/ (* internal-index cos-theta2)
+                        (* external-index cos-theta1)))])
+          (values r t reflection refraction)))))
+
 (define (sample-environment scene P R Kr depth)
   (pixel-color-from-ray scene
     (<ray> make [origin P] [direction R])

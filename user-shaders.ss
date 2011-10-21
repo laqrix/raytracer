@@ -265,3 +265,32 @@
            (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
            specularcolor))
          Oi)))))
+
+(define-shader glass
+  ([Ka .2] [Kd 0] [Ks .5] [roughness .05]
+   [Kr 1] [Kt 1] [eta 1.5] [transmitcolor white])
+  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
+         [IN (vec-normalize incoming)]
+         [V (vec-reverse IN)])
+    (let-values
+     ([(kr kt Rfldir Rfrdir)
+       (fresnel IN Nf (if (< (vec-dot incoming normal) 0)
+                          (/ 1.0 eta)
+                          eta))])
+     (let* ([kt (- 1 kr)]
+            [kr (* kr Kr)]
+            [kt (* kt Kt)]
+            [Crefl (sample-environment scene intersect-point
+                     (vec-normalize Rfldir) kr depth)]
+            [Crefr (sample-environment scene intersect-point
+                     (vec-normalize Rfrdir) kt depth)])
+       (color-add
+        (color-mul Cs
+          (color-add
+           (color-num-mul ((ambient)) Ka)
+           (color-num-mul ((diffuse [N Nf])) Kd)))
+        Crefl
+        (color-num-mul
+         ((specular [N Nf] [eye V] [roughness roughness]))
+         Ks)                           ; not quite what RenderMan does
+        (color-mul transmitcolor Crefr))))))

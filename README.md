@@ -24,6 +24,7 @@ Less stable features:
   - Texture mapping
   - Normal mapping
   - Displacement shaders
+  - Glass shader
 
 Things to do:
 
@@ -45,7 +46,6 @@ Things to do:
   - show-xyz
   - shiny-plastic
   - painted-plastic
-  - glass
   - depth-cue
   - fog
   - smoke
