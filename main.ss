@@ -300,3 +300,10 @@
           [yt (make-linear-transform 0 1 0 (- (<image> height img) 1))])
       (lambda (s t)
         (image-ref img (exact (truncate (xt s))) (exact (truncate (yt t))))))))
+
+(define-defaults heights ([filename #f])
+  (let ([img (read-heights-file filename)])
+    (let ([xt (make-linear-transform 0 1 0 (- (<image> width img) 1))]
+          [yt (make-linear-transform 0 1 0 (- (<image> height img) 1))])
+      (lambda (s t)
+        (image-ref img (exact (truncate (xt s))) (exact (truncate (yt t))))))))

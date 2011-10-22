@@ -75,6 +75,13 @@
     (lambda (r g b a)
       (make-vec (t r) (t g) (t b)))))
 
+(define (read-heights-file filename)
+  ;; Heights are stored in the range [0, 255] but represent [0, 1]
+  (define t (make-linear-transform 0 255 0.0 1.0))
+  (read-tga filename
+    (lambda (r g b a)
+      (make-vec 0 0 (t b)))))
+
 (define (read-tga filename proc)
   (define-syntax assert
     (syntax-rules ()
@@ -94,10 +101,17 @@
     (define (read8)
       (get-u8 ip))
     (define (read-pixel pixel-depth)
-      (let* ([b (read8)]
-             [g (read8)]
-             [r (read8)])
-        (proc r g b (and (= pixel-depth 32) (read8)))))
+      (cond
+       [(= pixel-depth 8)
+        (let ([x (read8)])
+          (proc x x x #f))]
+       [(>= pixel-depth 24)
+        (let* ([b (read8)]
+               [g (read8)]
+               [r (read8)])
+          (proc r g b (and (= pixel-depth 32) (read8))))]
+       [else
+        (errorf 'read-pixel "invalid pixel depth ~a" pixel-depth)]))
     (let ([hdr (read-header ip)])
       (assert (= 0 (get8 hdr 0))
         (errorf #f "ID Length: ~a but expected 0" (get8 hdr 0)))
@@ -114,7 +128,8 @@
             [pixel-depth (get8 hdr 16)]
             [image-descriptor (get8 hdr 17)])
         (cond
-         [(= image-type 2)              ; Uncompressed
+         [(or (= image-type 2)          ; Uncompressed true color
+              (= image-type 3))         ; Uncompressed black and white
           (assert (= 0 image-descriptor)
             (errorf #f "Image Descriptor: ~a not handled in uncompressed mode"
               image-descriptor))
