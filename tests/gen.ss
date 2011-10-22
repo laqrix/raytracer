@@ -301,6 +301,7 @@
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
    `(("constant" . (constant))
+     ("show-xyz" . (show-xyz))
      ("matte" . (matte))
      ("metal" . (metal))
      ("shiny-metal" . (shiny-metal))
@@ -352,6 +353,7 @@
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
    `(("constant" . (constant))
+     ("show-xyz" . (show-xyz))
      ("matte" . (matte))
      ("metal" . (metal))
      ("shiny-metal" . (shiny-metal))
@@ -404,7 +406,13 @@
      ("sphere" .
       (sphere [M (scale 2 2 2)]
         [surface (simple-texmap
-                 [texture (texture [filename "test-texture"])])]))))
+                 [texture (texture [filename "test-texture"])])]))
+     ("plane-st" .
+      (plane [M (scale 3 3 3)]
+        [surface (show-st)]))
+     ("sphere-st" .
+      (sphere [M (scale 2 2 2)]
+        [surface (show-st)]))))
   )
 
 (group csg

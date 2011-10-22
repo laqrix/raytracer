@@ -294,3 +294,17 @@
          ((specular [N Nf] [eye V] [roughness roughness]))
          Ks)                           ; not quite what RenderMan does
         (color-mul transmitcolor Crefr))))))
+
+(define-shader show-st ()
+  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
+         [st (point->texture object (point->surface object intersect-point))])
+    (make-color (vec-i st) (vec-j st) 0)))
+
+(define-shader show-xyz
+  ([xmin -1] [ymin -1] [zmin -1] [xmax 1] [ymax 1] [zmax 1])
+  (let* ([scale
+          (make-vec (/ 1 (- xmax xmin)) (/ 1 (- ymax ymin)) (/ 1 (- zmax zmin)))]
+         [zero (make-vec xmin ymin zmin)]
+         [P (point->surface object intersect-point)]
+         [cubeP (vec-mul (vec-sub P zero) scale)])
+    (make-color (vec-i cubeP) (vec-j cubeP) (vec-k cubeP))))

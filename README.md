@@ -25,6 +25,7 @@ Less stable features:
   - Normal mapping
   - Displacement shaders
   - Glass shader
+  - show-st, show-xyz
 
 Things to do:
 
@@ -42,8 +43,6 @@ Things to do:
   - "uber" light
 
 - More shaders
-  - show-st
-  - show-xyz
   - shiny-plastic
   - painted-plastic
   - depth-cue
