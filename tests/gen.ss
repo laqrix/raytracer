@@ -1,3 +1,6 @@
+(define width 128)
+(define height 128)
+
 (define sources '())
 (define groups (make-eq-hashtable))
 
@@ -57,7 +60,7 @@
      (let ([name (string-append "light-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128 
+         `((render image-simple ,name ,width ,height
              (<camera> make
                [translation (make-vec 0 0 10)]
                [target (make-vec 0 0 0)]
@@ -114,7 +117,7 @@
             (make-lights (fxlogbit0 2 x)))]
          [else '()]))
       ($build name
-        `((render image-simple ,name 128 128
+        `((render image-simple ,name ,width ,height
             (<camera> make
               [translation (make-vec 0 0 10)]
               [target (make-vec 0 0 0)]
@@ -146,7 +149,7 @@
      (let ([name (string-append "object-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128
+         `((render image-simple ,name ,width ,height
              (<camera> make
                [translation (make-vec 0 0 10)]
                [target (make-vec 0 0 0)]
@@ -180,7 +183,7 @@
      (let ([name (string-append "quadric-" (car p))]
            [coef (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128
+         `((render image-simple ,name ,width ,height
              (<camera> make
                [translation (make-vec 0 0 10)]
                [target (make-vec 0 0 0)]
@@ -206,7 +209,7 @@
   )
 
 (build "spheres"
-  (render image-simple "spheres" 128 128
+  (render image-simple "spheres" ,width ,height
     (<camera> make
       [translation (make-vec 0 0 10)]
       [target (make-vec 0 0 0)]
@@ -237,7 +240,7 @@
          (intensity .5)))])))
 
 (build "metal-ball"
-  (render image-simple "metal-ball" 128 128
+  (render image-simple "metal-ball" ,width ,height
     (<camera> make (translation (make-vec 0 0 10))
       (target (make-vec 0 0 0)) (distance 1)
       (view
@@ -271,7 +274,7 @@
      (let ([name (string-append "shader-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128
+         `((render image-simple ,name ,width ,height
              (<camera> make (translation (make-vec 0 0 10))
                (target (make-vec 0 0 0))
                (distance 1)
@@ -319,7 +322,7 @@
      (let ([name (string-append "transparent-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128
+         `((render image-simple ,name ,width ,height
              (<camera> make (translation (make-vec 0 0 10))
                (target (make-vec 0 0 0))
                (distance 1)
@@ -370,7 +373,7 @@
      (let ([name (string-append "texture-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name 128 128
+         `((render image-simple ,name ,width ,height
              (<camera> make (translation (make-vec 0 0 10))
                (target (make-vec 0 0 0))
                (distance 1)
@@ -406,7 +409,7 @@
 
 (group csg
   (build "csg-difference"
-    (render image-simple "csg-difference" 128 128
+    (render image-simple "csg-difference" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -442,7 +445,7 @@
           (intensity 1)))))))
 
   (build "csg-difference2"
-    (render image-simple "csg-difference2" 128 128
+    (render image-simple "csg-difference2" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -479,7 +482,7 @@
           (intensity 1)))))))
 
   (build "csg-intersect"
-    (render image-simple "csg-intersect" 128 128
+    (render image-simple "csg-intersect" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -515,7 +518,7 @@
           (intensity 1)))))))
 
   (build "csg-intersect2"
-    (render image-simple "csg-intersect2" 128 128
+    (render image-simple "csg-intersect2" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -552,7 +555,7 @@
           (intensity 1)))))))
 
   (build "csg-union"
-    (render image-simple "csg-union" 128 128
+    (render image-simple "csg-union" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -588,7 +591,7 @@
            (intensity 1)))))))
 
   (build "csg-union2"
-    (render image-simple "csg-union2" 128 128
+    (render image-simple "csg-union2" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
@@ -625,7 +628,7 @@
           (intensity 1)))))))
 
   (build "csg-all"
-    (render image-simple "csg-all" 256 256
+    (render image-simple "csg-all" ,width ,height
       (<camera> make (translation (make-vec 0 0 10))
         (target (make-vec 0 0 0)) (distance 1)
         (view
