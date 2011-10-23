@@ -1,5 +1,15 @@
 (define width 128)
-(define height 128)
+(define height (* width 10/16))
+
+(define default-camera
+  '(<camera> make
+     (translation (make-vec 0 0 10))
+     (target (make-vec 0 0 0))
+     (distance 1)
+     (view
+      (<view> make
+        (left (* -2 16/10)) (right (* 2 16/10))
+        (bottom -2) (top 2)))))
 
 (define sources '())
 (define groups (make-eq-hashtable))
@@ -46,7 +56,7 @@
 (define-syntax build
   (syntax-rules ()
     [(_ filename expr ...)
-     ($build filename '(expr ...))]))
+     ($build filename `(expr ...))]))
 
 (define-syntax group
   (syntax-rules ()
@@ -61,11 +71,7 @@
            [expr (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make
-               [translation (make-vec 0 0 10)]
-               [target (make-vec 0 0 0)]
-               [distance 1]
-               [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+             ,default-camera
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -118,11 +124,7 @@
          [else '()]))
       ($build name
         `((render image-simple ,name ,width ,height
-            (<camera> make
-              [translation (make-vec 0 0 10)]
-              [target (make-vec 0 0 0)]
-              [distance 1]
-              [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+            ,default-camera
             (<scene> make
               [background-color (make-color 0 .3 .3)]
               [objects
@@ -150,11 +152,7 @@
            [expr (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make
-               [translation (make-vec 0 0 10)]
-               [target (make-vec 0 0 0)]
-               [distance 1]
-               [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+             ,default-camera
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -184,11 +182,7 @@
            [coef (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make
-               [translation (make-vec 0 0 10)]
-               [target (make-vec 0 0 0)]
-               [distance 1]
-               [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+             ,default-camera
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -210,11 +204,7 @@
 
 (build "spheres"
   (render image-simple "spheres" ,width ,height
-    (<camera> make
-      [translation (make-vec 0 0 10)]
-      [target (make-vec 0 0 0)]
-      [distance 1]
-      [view (<view> make [left -2] [right 2] [bottom -2] [top 2])])
+    ,default-camera
     (<scene> make
       [background-color black]
       [objects
@@ -241,10 +231,7 @@
 
 (build "metal-ball"
   (render image-simple "metal-ball" ,width ,height
-    (<camera> make (translation (make-vec 0 0 10))
-      (target (make-vec 0 0 0)) (distance 1)
-      (view
-       (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+    ,default-camera
     (<scene>
      make
      (background-color (make-color 0 .3 .3))
@@ -275,46 +262,90 @@
            [expr (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make (translation (make-vec 0 0 10))
-               (target (make-vec 0 0 0))
-               (distance 1)
-               (view (<view> make (left -3.5) (right 3.5) (bottom -3.5) (top 3.5))))
-             (<scene>
-              make
-              [background-color (make-color 0 .3 .3)]
-              [objects
-               (list
-                (sphere [color (make-color 0 .8 0)]
-                  [surface ,expr]
-                  [M (scale 2 2 2)])
-                (plane [center (make-vec 0 -3 0)]
-                  [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
-                  [surface (matte)])
-                #;(plane [center (make-vec -3 0 0)]
-                [M (matrix-mul (scale 9 9 9) (rotate-y 90))]
-                [surface (matte)])
-                #;(plane [center (make-vec 0 0 -3)]
-                [M (matrix-mul (scale 9 9 9))]
-                [surface (matte)]))]
-              [lights
-               (list
-                (ambient-light [intensity 0.1])
-                (distant-light [position (make-vec 5 5 10)]))]))))))
-   `(("constant" . (constant))
-     ("show-xyz" . (show-xyz))
+             ,default-camera
+             (<scene> make
+               [background-color (make-color 0 .3 .3)]
+               [objects
+                (list
+                 (sphere [color (make-color 0 .8 0)]
+                   [surface ,expr]
+                   [M (scale 2 2 2)])
+                 (plane [center (make-vec 0 -3 0)]
+                   [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
+                   [surface (matte)])
+                 #;(plane [center (make-vec -3 0 0)]
+                 [M (matrix-mul (scale 9 9 9) (rotate-y 90))]
+                 [surface (matte)])
+                 #;(plane [center (make-vec 0 0 -3)]
+                 [M (matrix-mul (scale 9 9 9))]
+                 [surface (matte)]))]
+               [lights
+                (list
+                 (ambient-light [intensity 0.1])
+                 (distant-light [position (make-vec 5 5 10)]))]))))))
+   `(("checker" . (checker))
+     ("constant" . (constant))
+     ("glass" . (glass))
+     ("glow" . (glow))
+     ("granite" . (granite))
+     ("marble" . (marble))
+     ("marble-green-and-tan" .
+      (marble
+       [colorlist
+        (list
+         (make-color 0.824 0.725 0.584)
+         (make-color 0.514 0.584 0.533)
+         (make-color 0.514 0.584 0.533)
+         (make-color 0.298 0.376 0.318)
+         (make-color 0.298 0.376 0.318)
+         (make-color 0.263 0.337 0.282)
+         (make-color 0.263 0.337 0.282)
+         (make-color 0.431 0.506 0.451)
+         (make-color 0.431 0.506 0.451)
+         (make-color 0.529 0.631 0.471)
+         (make-color 0.529 0.631 0.471)
+         (make-color 0.333 0.376 0.318)
+         (make-color 0.333 0.376 0.318)
+         (make-color 0.298 0.376 0.318)
+         (make-color 0.298 0.376 0.318)
+         (make-color 0.416 0.376 0.318)
+         (make-color 0.416 0.376 0.318)
+         (make-color 0.416 0.376 0.318)
+         (make-color 0.416 0.376 0.318)
+         (make-color 0.824 0.725 0.584))]))
+     ("marble-rainbow" .
+      (marble
+       [octaves 2] [lacunarity 1] [gain 1]
+       [colorlist
+        (list
+         (make-color 1 0 0)
+         (make-color 1 0 0)
+         (make-color 1 1 0)
+         (make-color 1 1 0)
+         (make-color 0 1 0)
+         (make-color 0 1 0)
+         (make-color 0 1 1)
+         (make-color 0 1 1)
+         (make-color 0 0 1)
+         (make-color 0 0 1))]))
+     ("marble-rgb" .
+      (marble
+       [colorlist
+        (list
+         (make-color 0 0 0)
+         (make-color 1 0 0)
+         (make-color 0 1 0)
+         (make-color 0 0 1)
+         (make-color 1 1 1))]))
      ("matte" . (matte))
      ("metal" . (metal))
-     ("shiny-metal" . (shiny-metal))
-     ("plastic" . (plastic))
-     ("stripes" . (stripes))
-     ("checker" . (checker))
      ("mirror" . (mirror))
-     ("marble" . (marble))
-     ("granite" . (granite))
-     ("wood" . (wood))
-     ("glow" . (glow))
+     ("plastic" . (plastic))
      ("screen" . (screen))
-     ("glass" . (glass))))
+     ("shiny-metal" . (shiny-metal))
+     ("show-xyz" . (show-xyz))
+     ("stripes" . (stripes))
+     ("wood" . (wood))))
   )
 
 (group transparent
@@ -324,10 +355,7 @@
            [expr (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make (translation (make-vec 0 0 10))
-               (target (make-vec 0 0 0))
-               (distance 1)
-               (view (<view> make (left -3.5) (right 3.5) (bottom -3.5) (top 3.5))))
+             ,default-camera
              (<scene>
               make
               [background-color (make-color 0 .3 .3)]
@@ -353,20 +381,14 @@
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
    `(("constant" . (constant))
-     ("show-xyz" . (show-xyz))
+     ("glass" . (glass))
+     ("glow" . (glow))
      ("matte" . (matte))
      ("metal" . (metal))
-     ("shiny-metal" . (shiny-metal))
-     ("plastic" . (plastic))
-     ("stripes" . (stripes))
-     ("checker" . (checker))
      ("mirror" . (mirror))
-     ("marble" . (marble))
-     ("granite" . (granite))
-     ("wood" . (wood))
-     ("glow" . (glow))
+     ("plastic" . (plastic))
      ("screen" . (screen))
-     ("glass" . (glass))))
+     ("shiny-metal" . (shiny-metal))))
   )
 
 (group textures
@@ -376,10 +398,7 @@
            [expr (cdr p)])
        ($build name
          `((render image-simple ,name ,width ,height
-             (<camera> make (translation (make-vec 0 0 10))
-               (target (make-vec 0 0 0))
-               (distance 1)
-               (view (<view> make (left -3.5) (right 3.5) (bottom -3.5) (top 3.5))))
+             ,default-camera
              (<scene>
               make
               [background-color (make-color 0 .3 .3)]
@@ -418,10 +437,7 @@
 (group csg
   (build "csg-difference"
     (render image-simple "csg-difference" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -454,10 +470,7 @@
 
   (build "csg-difference2"
     (render image-simple "csg-difference2" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -491,10 +504,7 @@
 
   (build "csg-intersect"
     (render image-simple "csg-intersect" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -527,10 +537,7 @@
 
   (build "csg-intersect2"
     (render image-simple "csg-intersect2" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -564,10 +571,7 @@
 
   (build "csg-union"
     (render image-simple "csg-union" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -600,10 +604,7 @@
 
   (build "csg-union2"
     (render image-simple "csg-union2" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -637,10 +638,7 @@
 
   (build "csg-all"
     (render image-simple "csg-all" ,width ,height
-      (<camera> make (translation (make-vec 0 0 10))
-        (target (make-vec 0 0 0)) (distance 1)
-        (view
-         (<view> make (left -2) (right 2) (bottom -2) (top 2))))
+      ,default-camera
       (<scene>
        make
        (background-color white)
