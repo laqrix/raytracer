@@ -26,6 +26,7 @@ Less stable features:
   - Displacement shaders
   - Glass shader
   - show-st, show-xyz
+  - Antialiasing
 
 Things to do:
 

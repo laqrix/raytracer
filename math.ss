@@ -212,3 +212,31 @@
       (when (or (< x 0.0) (> x 1.0))
         (errorf 'spline "param is out of range: ~a" x))
       (spline-helper (* x edges) ls))))
+
+;; Filters
+
+(define (box-filter x y xwidth ywidth)
+  1)
+
+(define (triangle-filter x y xwidth ywidth)
+  (* (/ (- 1 (abs x)) (/ xwidth 2))
+     (/ (- 1 (abs y)) (/ ywidth 2))))
+
+(define (catmull-rom-filter x y xwidth ywidth)
+  (let* ([r2 (+ (sqr x) (sqr y))]
+         [r (sqrt r2)])
+    (cond
+     [(>= r 2) 0]
+     [(< r 1) (+ (* 3 r r2) (* -5 r2) 2)]
+     [else (+ (- (* r r2)) (* 5 r2) (* -8 r) 4)])))
+
+(define (gaussian-filter x y xwidth ywidth)
+  (exp (* -2 (+ (sqr (/ (* 2 x) xwidth)) (sqr (/ (* 2 y) ywidth))))))
+
+(define (sinc-filter x y xwidth ywidth)
+  (* (if (and (> x -0.001) (< x 0.001))
+         1
+         (/ (sin x) x))
+     (if (and (> y -0.001) (< y 0.001))
+         1
+         (/ (sin y) y))))

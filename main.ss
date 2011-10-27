@@ -13,7 +13,9 @@
 (define-record <scene> background-color objects lights)
 
 (define-record <view> left right bottom top)
-(define-record <camera> translation target distance view)
+(define-record <camera>
+  output-width output-height translation target distance view)
+(define-record <display> x-samples y-samples filter x-width y-width)
 
 (define-record <intersect> time object extra)
 (define-record <ray> origin direction)
@@ -25,6 +27,27 @@
      (fold-left (lambda (acc item) b1 b2 ...)
        init
        ls)]))
+
+(define-syntax list-of-helper
+  (syntax-rules ()
+    [(_ $acc $exp () $guard)
+     (if $guard
+         (cons $exp $acc)
+         $acc)]
+    [(_ $acc $exp ([$var $gen] . $rest) $guard)
+     (fold-left
+      (lambda (acc $var)
+        (list-of-helper acc $exp $rest $guard))
+      $acc
+      $gen)]))
+
+(define-syntax list-of
+  (syntax-rules ()
+    [(_ $exp ([$var $gen] . $rest))
+     (list-of $exp ([$var $gen] . $rest) #t)]
+    [(_ $exp ([$var $gen] . $rest) $guard)
+     (reverse
+      (list-of-helper '() $exp ([$var $gen] . $rest) $guard))]))
 
 (load "shaders.ss")
 (load "lights.ss")
@@ -98,13 +121,13 @@
                         [else
                          (color-add color (lp rest))]))))))]))))
 
-(define (ray-gun width height camera)
+(define (ray-gun camera)
   (define view (<camera> view camera))
   (define xt
-    (make-linear-transform 0 (- width 1)
+    (make-linear-transform 0 (- (<camera> output-width camera) 1)
       (<view> left view) (<view> right view)))
   (define yt
-    (make-linear-transform 0 (- height 1)
+    (make-linear-transform 0 (- (<camera> output-height camera) 1)
       (<view> bottom view) (<view> top view)))
   
   (let ([up (make-vec 0 1 0)]
@@ -133,20 +156,64 @@
           [direction (vec-normalize
                       (vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
 
+(define (make-antialias display get-color)
+  (define x-samples (<display> x-samples display))
+  (define y-samples (<display> y-samples display))
+  (if (and (= x-samples 1) (= y-samples 1))
+      get-color
+      (let ()
+        (define filter (<display> filter display))
+        (define x-width (<display> x-width display))
+        (define y-width (<display> y-width display))
+        (define xt
+          (if (<= x-samples 1)
+              (lambda (x) 0)
+              (make-linear-transform 0 (- x-samples 1)
+                (- (/ x-width 2)) (/ x-width 2))))
+        (define yt
+          (if (<= y-samples 1)
+              (lambda (y) 0)
+              (make-linear-transform 0 (- y-samples 1)
+                (- (/ y-width 2)) (/ y-width 2))))
+        (define offsets
+          (list-of (cons (xt x) (yt y))
+            ([x (iota x-samples)] [y (iota y-samples)])))
+        (define x-offsets (map car offsets))
+        (define y-offsets (map cdr offsets))
+        (define weights
+          (map (lambda (x y) (filter x y x-width y-width))
+            x-offsets y-offsets))
+        (define sum-weights (fold-left + 0 weights))
+        (lambda (x y)
+          (color-num-mul
+           (fold-left
+            (lambda (acc xo yo w)
+              (color-add acc
+                (color-num-mul (get-color (+ x xo) (+ y yo)) w)))
+            black
+            x-offsets
+            y-offsets
+            weights)
+           (/ 1 sum-weights))))))
+
 (define E)                              ; should really be in user env
-(define (image-simple width height camera scene depth)
-  (let ([shoot-ray (ray-gun width height camera)])
+(define (image-simple camera display scene depth)
+  (define shoot-ray (ray-gun camera))
+  (define (f x y)
+    (let ([ray (shoot-ray x y)])
+      (fluid-let ([E (<ray> origin ray)])
+        (pixel-color-from-ray scene ray 1 depth))))
+  (define antialias (make-antialias display f))
+  (let ([width (<camera> output-width camera)]
+        [height (<camera> output-height camera)])
     (make-image width height 0 0
       (lambda (set-pixel)
         (do ([y 0 (+ y 1)]) ((= y height))
           (do ([x 0 (+ x 1)]) ((= x width))
-            (let ([ray (shoot-ray x y)])
-              (fluid-let ([E (<ray> origin ray)])
-                (set-pixel x y
-                  (pixel-color-from-ray scene ray 1 depth))))))))))
+            (set-pixel x y (antialias x y))))))))
 
-(define (render f filename width height camera scene)
-  (let ([image (time (f width height camera scene MAXDEPTH))])
+(define (render f filename camera display scene)
+  (let ([image (time (f camera display scene MAXDEPTH))])
     (write-tga image filename)))
 
 ;; Scene Syntax

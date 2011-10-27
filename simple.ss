@@ -1,11 +1,18 @@
 (load "user-shaders.ss")
 
-(render image-simple "simple" 640 480
+(render image-simple "simple"
   (<camera> make
+    [output-width 640]
+    [output-height 480]
     [translation (make-vec 320 240 -1000)]
     [target (make-vec 320 240 0)]
     [distance 1]
     [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])
+  (<display> make
+    [x-samples 2]
+    [y-samples 2]
+    [filter gaussian-filter]
+    [x-width 2/3] [y-width 2/3])
   (<scene> make
     [background-color black]
     [objects

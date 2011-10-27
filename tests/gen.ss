@@ -2,14 +2,24 @@
 (define height (* width 10/16))
 
 (define default-camera
-  '(<camera> make
-     (translation (make-vec 0 0 10))
-     (target (make-vec 0 0 0))
-     (distance 1)
-     (view
+  `(<camera> make
+     [output-width ,width]
+     [output-height ,height]
+     [translation (make-vec 0 0 10)]
+     [target (make-vec 0 0 0)]
+     [distance 1]
+     [view
       (<view> make
         (left (* -2 16/10)) (right (* 2 16/10))
-        (bottom -2) (top 2)))))
+        (bottom -2) (top 2))]))
+
+(define default-display
+  '(<display> make
+     [x-samples 1]
+     [y-samples 1]
+     [filter gaussian-filter]
+     [x-width 2/3]
+     [y-width 2/3]))
 
 (define sources '())
 (define groups (make-eq-hashtable))
@@ -70,8 +80,9 @@
      (let ([name (string-append "light-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -123,8 +134,9 @@
             (make-lights (fxlogbit0 2 x)))]
          [else '()]))
       ($build name
-        `((render image-simple ,name ,width ,height
+        `((render image-simple ,name
             ,default-camera
+            ,default-display
             (<scene> make
               [background-color (make-color 0 .3 .3)]
               [objects
@@ -151,8 +163,9 @@
      (let ([name (string-append "object-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -181,8 +194,9 @@
      (let ([name (string-append "quadric-" (car p))]
            [coef (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -203,8 +217,9 @@
   )
 
 (build "spheres"
-  (render image-simple "spheres" ,width ,height
+  (render image-simple "spheres"
     ,default-camera
+    ,default-display
     (<scene> make
       [background-color black]
       [objects
@@ -230,8 +245,9 @@
          (intensity .5)))])))
 
 (build "metal-ball"
-  (render image-simple "metal-ball" ,width ,height
+  (render image-simple "metal-ball"
     ,default-camera
+    ,default-display
     (<scene>
      make
      (background-color (make-color 0 .3 .3))
@@ -261,8 +277,9 @@
      (let ([name (string-append "shader-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene> make
                [background-color (make-color 0 .3 .3)]
                [objects
@@ -354,8 +371,9 @@
      (let ([name (string-append "transparent-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene>
               make
               [background-color (make-color 0 .3 .3)]
@@ -397,8 +415,9 @@
      (let ([name (string-append "texture-" (car p))]
            [expr (cdr p)])
        ($build name
-         `((render image-simple ,name ,width ,height
+         `((render image-simple ,name
              ,default-camera
+             ,default-display
              (<scene>
               make
               [background-color (make-color 0 .3 .3)]
@@ -436,8 +455,9 @@
 
 (group csg
   (build "csg-difference"
-    (render image-simple "csg-difference" ,width ,height
+    (render image-simple "csg-difference"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -469,8 +489,9 @@
           (intensity 1)))))))
 
   (build "csg-difference2"
-    (render image-simple "csg-difference2" ,width ,height
+    (render image-simple "csg-difference2"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -503,8 +524,9 @@
           (intensity 1)))))))
 
   (build "csg-intersect"
-    (render image-simple "csg-intersect" ,width ,height
+    (render image-simple "csg-intersect"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -536,8 +558,9 @@
           (intensity 1)))))))
 
   (build "csg-intersect2"
-    (render image-simple "csg-intersect2" ,width ,height
+    (render image-simple "csg-intersect2"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -570,8 +593,9 @@
           (intensity 1)))))))
 
   (build "csg-union"
-    (render image-simple "csg-union" ,width ,height
+    (render image-simple "csg-union"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -603,8 +627,9 @@
            (intensity 1)))))))
 
   (build "csg-union2"
-    (render image-simple "csg-union2" ,width ,height
+    (render image-simple "csg-union2"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color (make-color 0 .3 .3))
@@ -637,8 +662,9 @@
           (intensity 1)))))))
 
   (build "csg-all"
-    (render image-simple "csg-all" ,width ,height
+    (render image-simple "csg-all"
       ,default-camera
+      ,default-display
       (<scene>
        make
        (background-color white)
@@ -677,6 +703,40 @@
           (position (make-vec 1 1 1))
           (color white)
           (intensity 1)))))))
+  )
+
+(group filters
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "filter-" (car p))]
+           [expr (cdr p)])
+       ($build name
+         `((render image-simple ,name
+             ,default-camera
+             ,expr
+             (<scene> make
+               [background-color (make-color 0 .3 .3)]
+               [objects
+                (list
+                 (plane [center (make-vec 0 -3 0)]
+                   [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
+                   [surface (checker)]))]
+               [lights
+                (list
+                 (ambient-light [intensity 0.1])
+                 (distant-light [position (make-vec 5 5 10)]))]))))))
+   `(("none" . (<display> make [x-samples 1] [y-samples 1]
+                 [filter #f] [x-width #f] [y-width #f]))
+     ("box" . (<display> make [x-samples 4] [y-samples 4]
+                [filter box-filter] [x-width 2/3] [y-width 2/3]))
+     ("triangle" . (<display> make [x-samples 4] [y-samples 4]
+                     [filter triangle-filter] [x-width 2/3] [y-width 2/3]))
+     ("catmull-rom" . (<display> make [x-samples 4] [y-samples 4]
+                        [filter catmull-rom-filter] [x-width 2/3] [y-width 2/3]))
+     ("gaussian" . (<display> make [x-samples 4] [y-samples 4]
+                     [filter gaussian-filter] [x-width 2/3] [y-width 2/3]))
+     ("sinc" . (<display> make [x-samples 4] [y-samples 4]
+                 [filter sinc-filter] [x-width 2/3] [y-width 2/3]))))
   )
 
 (write-sources)
