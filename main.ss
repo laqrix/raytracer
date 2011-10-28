@@ -15,7 +15,7 @@
 (define-record <view> left right bottom top)
 (define-record <camera>
   output-width output-height translation target distance view)
-(define-record <display> x-samples y-samples filter x-width y-width)
+(define-record <display> x-samples y-samples filter x-width y-width gain gamma)
 
 (define-record <intersect> time object extra)
 (define-record <ray> origin direction)
@@ -196,6 +196,18 @@
             weights)
            (/ 1 sum-weights))))))
 
+(define (make-exposure display)
+  (define gain (<display> gain display))
+  (define gamma (<display> gamma display))
+  (if (and (= gain 1) (= gamma 1))
+      (lambda (c) c)
+      (let ([g (/ 1 gamma)])
+        (lambda (c)
+          (make-color
+           (expt (* (color-r c) gain) g)
+           (expt (* (color-g c) gain) g)
+           (expt (* (color-b c) gain) g))))))
+
 (define E)                              ; should really be in user env
 (define (image-simple camera display scene depth)
   (define shoot-ray (ray-gun camera))
@@ -204,13 +216,14 @@
       (fluid-let ([E (<ray> origin ray)])
         (pixel-color-from-ray scene ray 1 depth))))
   (define antialias (make-antialias display f))
+  (define exposure (make-exposure display))
   (let ([width (<camera> output-width camera)]
         [height (<camera> output-height camera)])
     (make-image width height 0 0
       (lambda (set-pixel)
         (do ([y 0 (+ y 1)]) ((= y height))
           (do ([x 0 (+ x 1)]) ((= x width))
-            (set-pixel x y (antialias x y))))))))
+            (set-pixel x y (exposure (antialias x y)))))))))
 
 (define (render f filename camera display scene)
   (let ([image (time (f camera display scene MAXDEPTH))])

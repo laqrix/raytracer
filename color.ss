@@ -2,6 +2,10 @@
 
 (define (make-color r g b) (<color> make [r r] [g g] [b b]))
 
+(define (color-r c) (<color> r c))
+(define (color-g c) (<color> g c))
+(define (color-b c) (<color> b c))
+
 (define black (make-color 0 0 0))
 (define white (make-color 1 1 1))
 

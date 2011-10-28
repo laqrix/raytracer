@@ -19,7 +19,9 @@
      [y-samples 1]
      [filter gaussian-filter]
      [x-width 2/3]
-     [y-width 2/3]))
+     [y-width 2/3]
+     [gain 1]
+     [gamma 1]))
 
 (define sources '())
 (define groups (make-eq-hashtable))
@@ -726,17 +728,23 @@
                  (ambient-light [intensity 0.1])
                  (distant-light [position (make-vec 5 5 10)]))]))))))
    `(("none" . (<display> make [x-samples 1] [y-samples 1]
-                 [filter #f] [x-width #f] [y-width #f]))
+                 [filter #f] [x-width #f] [y-width #f]
+                 [gain 1] [gamma 1]))
      ("box" . (<display> make [x-samples 4] [y-samples 4]
-                [filter box-filter] [x-width 2/3] [y-width 2/3]))
+                [filter box-filter] [x-width 2/3] [y-width 2/3]
+                [gain 1] [gamma 1]))
      ("triangle" . (<display> make [x-samples 4] [y-samples 4]
-                     [filter triangle-filter] [x-width 2/3] [y-width 2/3]))
+                     [filter triangle-filter] [x-width 2/3] [y-width 2/3]
+                     [gain 1] [gamma 1]))
      ("catmull-rom" . (<display> make [x-samples 4] [y-samples 4]
-                        [filter catmull-rom-filter] [x-width 2/3] [y-width 2/3]))
+                        [filter catmull-rom-filter] [x-width 2/3] [y-width 2/3]
+                        [gain 1] [gamma 1]))
      ("gaussian" . (<display> make [x-samples 4] [y-samples 4]
-                     [filter gaussian-filter] [x-width 2/3] [y-width 2/3]))
+                     [filter gaussian-filter] [x-width 2/3] [y-width 2/3]
+                     [gain 1] [gamma 1]))
      ("sinc" . (<display> make [x-samples 4] [y-samples 4]
-                 [filter sinc-filter] [x-width 2/3] [y-width 2/3]))))
+                 [filter sinc-filter] [x-width 2/3] [y-width 2/3]
+                 [gain 1] [gamma 1]))))
   )
 
 (write-sources)

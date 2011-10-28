@@ -27,6 +27,7 @@ Less stable features:
   - Glass shader
   - show-st, show-xyz
   - Antialiasing
+  - Exposure (gain and gamma)
 
 Things to do:
 

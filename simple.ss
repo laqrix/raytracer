@@ -12,7 +12,8 @@
     [x-samples 2]
     [y-samples 2]
     [filter gaussian-filter]
-    [x-width 2/3] [y-width 2/3])
+    [x-width 2/3] [y-width 2/3]
+    [gain 1] [gamma 1])
   (<scene> make
     [background-color black]
     [objects
