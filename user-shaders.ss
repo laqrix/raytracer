@@ -246,25 +246,26 @@
         (values Cs transparent))))
 
 (define-shader screen
-  ([Ks .5] [Kd .5] [Ka .1] [roughness .1] [specularcolor white]
+  ([Ka 1] [Kd .75] [Ks .4] [roughness .1] [specularcolor white]
    [density .25] [frequency 20])
-  (let ([Nf (faceforward (vec-normalize normal) incoming)]
-        [V  (vec-normalize (vec-reverse incoming))])
-    (let ([st (point->texture object (point->surface object intersect-point))])
-      (let ([Oi (if (or (< (fmod (* (vec-i st) frequency) 1) density)
-                        (< (fmod (* (vec-j st) frequency) 1) density))
-                    opaque
-                    transparent)])
-        (values
-         (color-add
-          (color-mul Oi Cs
-            (color-add
-             (color-num-mul ((ambient)) Ka)
-             (color-num-mul ((diffuse [N Nf])) Kd)))
-          (color-mul
-           (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
-           specularcolor))
-         Oi)))))
+  (let ([st (point->texture object (point->surface object intersect-point))])
+    (if (or (< (fmod (* (vec-i st) frequency) 1) density)
+            (< (fmod (* (vec-j st) frequency) 1) density))
+        (let ([Nf (faceforward (vec-normalize normal) incoming)]
+              [V  (vec-normalize (vec-reverse incoming))])
+          (values
+           (color-mul Os
+             (color-add
+              (color-mul Cs
+                (color-add
+                 (color-num-mul ((ambient)) Ka)
+                 (color-num-mul ((diffuse [N Nf])) Kd)))
+              (color-mul
+               (color-num-mul ((specular [N Nf] [eye V] [roughness roughness]))
+                 Ks)
+               specularcolor)))
+           opaque))
+        (values black transparent))))
 
 (define-shader glass
   ([Ka .2] [Kd 0] [Ks .5] [roughness .05]
