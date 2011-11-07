@@ -90,36 +90,36 @@
 (define (pixel-color-from-ray scene ray Kr depth)
   (if (or (= depth 0) (<= Kr 0))
       black
-      (let lp ([ls (find-intersections ray scene)])
-        (match ls
-          [() (<scene> background-color scene)]
-          [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
-           (let ([incoming (<ray> direction ray)]
-                 [intersect-point (traverse-ray ray t)])
-             (let-values ([(intersect-point normal)
-                           (object-displace obj intersect-point
-                             (object-normal obj extra intersect-point))])
-               (let-values ([(color opacity)
-                             (object-shade scene obj extra intersect-point
-                               normal
-                               incoming
-                               depth)])
-                 (let ([color (color-num-mul color Kr)])
-                   (if (opaque? opacity)
-                       color
-                       (cond
-                        [(object-volume obj) =>
-                         (lambda (shader)
-                           (let-values ([(vol-color vol-opacity)
-                                         (volume-shade obj
-                                           intersect-point incoming
-                                           color opacity)])
-                             (let ([color (color-add color vol-color)])
-                               (if (opaque? vol-opacity)
-                                   color
-                                   (color-add color (lp rest))))))]
-                        [else
-                         (color-add color (lp rest))]))))))]))))
+      (color-num-mul
+       (let lp ([ls (find-intersections ray scene)])
+         (match ls
+           [() (<scene> background-color scene)]
+           [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
+            (let ([incoming (<ray> direction ray)]
+                  [intersect-point (traverse-ray ray t)])
+              (let*-values
+               ([(intersect-point normal)
+                 (object-displace obj intersect-point
+                   (object-normal obj extra intersect-point))]
+                [(color opacity)
+                 (object-shade scene obj extra intersect-point normal
+                   incoming depth)])
+               (if (opaque? opacity)
+                   color
+                   (cond
+                    [(object-volume obj) =>
+                     (lambda (shader)
+                       (let-values ([(vol-color vol-opacity)
+                                     (volume-shade obj
+                                       intersect-point incoming
+                                       color opacity)])
+                         (let ([color (color-add color vol-color)])
+                           (if (opaque? vol-opacity)
+                               color
+                               (color-add color (lp rest))))))]
+                    [else
+                     (color-add color (lp rest))]))))]))
+       Kr)))
 
 (define (ray-gun camera)
   (define view (<camera> view camera))
