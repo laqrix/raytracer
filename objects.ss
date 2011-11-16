@@ -317,7 +317,7 @@
             [(and (< cb1 ca1) (> cb2 ca2)) ; B is completely around A
              (intersection a (append (list b1 a1 a1 a2 a2 b2) (cddr b)))]
             [(and (< ca1 cb1) (> cb2 ca2)) ; A and B cross, A first
-             (intersection (append (list a1 b1 b1 a2) (cddr a)) 
+             (intersection (append (list a1 b1 b1 a2) (cddr a))
                (append (list b1 a2 a2 b2) (cddr b)))]
             [(and (< cb1 ca1) (> ca2 cb2)) ; A and B cross, B first
              (intersection (append (list a1 b2 b2 a2) (cddr a))
@@ -344,7 +344,7 @@
                [cb2 (<intersect> time b2)])
            (cond
             [(<= ca2 cb1)               ; A is completely less than B
-             (append (list a1 a2) (difference (cddr a) b))] 
+             (append (list a1 a2) (difference (cddr a) b))]
             [(<= cb2 ca1)               ; B is completely less than A
              (difference a (cddr b))]
             [(and (<= ca1 cb1) (> ca2 cb2)) ; A is completely around B

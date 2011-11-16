@@ -5,9 +5,9 @@
         (errorf #f "matrix index (~a, ~a) out of bounds (~a, ~a)" i j m n))
       (fx+ (fx* (fx- i 1) n) j -1))
     (initializer m n
-     (case-lambda
-      [(i j) (vector-ref store (index i j))]
-      [(i j x) (vector-set! store (index i j) x)]))
+      (case-lambda
+       [(i j) (vector-ref store (index i j))]
+       [(i j x) (vector-set! store (index i j) x)]))
     (case-lambda
      [() (values m n)]
      [(i j) (vector-ref store (index i j))])))
@@ -98,7 +98,7 @@
       (errorf 'ludcmp "matrix must be square"))
     (let* ([indx (make-vector n)]
            [d 1]
-           [a 
+           [a
             (make-matrix m n
               (lambda (m n a)
                 (let ([vv (make-vector n)])
@@ -190,18 +190,3 @@
             (lubksb a indx col)
             (do ([i 1 (fx+ i 1)]) ((fx> i n))
               (y i j (vector-ref col (fx- i 1))))))))))
-
-
-#!eof
-
-(matrix->list (matrix-inverse (make-matrix 3 3 (lambda(m n a) (a 1 1 1) (a 1 2 3) (a 1 3 1) (a 2 1 1) (a 2 2 1) (a 2 3 2) (a 3 1 2) (a 3 2 3) (a 3 3 4)))))
-
-;results should be:
-((2 9 -5) (0 -2 1) (-1 -3 2))
-
-;another way to do it:
-(matrix->list (matrix-inverse (list->matrix '((1 3 1) (1 1 2) (2 3 4)))))
-
-(matrix->list (matrix-mul (list->matrix '((1 2 3))) (list->matrix '((2 3) (3 4) (4 5)))))
-;result should be:
-((20 26))

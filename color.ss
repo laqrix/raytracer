@@ -28,6 +28,16 @@
      (+ (<color> b c1) (<color> b c2)))]
    [(c1 c2 . rest) (apply color-add (color-add c1 c2) rest)]))
 
+(define color-sub
+  (case-lambda
+   [(c1) c1]
+   [(c1 c2)
+    (make-color
+     (- (<color> r c1) (<color> r c2))
+     (- (<color> g c1) (<color> g c2))
+     (- (<color> b c1) (<color> b c2)))]
+   [(c1 c2 . rest) (apply color-sub (color-sub c1 c2) rest)]))
+
 (define color-mul
   (case-lambda
    [(c1) c1]

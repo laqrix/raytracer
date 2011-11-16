@@ -99,8 +99,6 @@
   (vec-num-mul v -1))
 
 ;; Matrix
-(define (build-identity-matrix) (matrix-identity 3))
-
 (define (mat-vec-mul m v)
   (let ([r (matrix-mul m
              (make-matrix 3 1
