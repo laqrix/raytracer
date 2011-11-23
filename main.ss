@@ -121,6 +121,36 @@
                      (color-add color (lp rest))]))))]))
        Kr)))
 
+(define (pixel-depth-from-ray scene ray)
+  (define color->number color-r)
+  (let lp ([ls (find-intersections ray scene)])
+    (match ls
+      [() 0]
+      [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
+       (let ([incoming (<ray> direction ray)]
+             [intersect-point (traverse-ray ray t)])
+         (let*-values
+          ([(intersect-point normal)
+            (object-displace obj intersect-point
+              (object-normal obj extra intersect-point))]
+           [(color opacity)
+            (object-shade scene obj extra intersect-point normal
+              incoming 0)])
+          (if (opaque? opacity)
+              t
+              (cond
+               [(object-volume obj) =>
+                (lambda (shader)
+                  (let-values ([(vol-color vol-opacity)
+                                (volume-shade obj
+                                  intersect-point incoming
+                                  color opacity)])
+                    (if (opaque? vol-opacity)
+                        t
+                        (+ (color->number vol-opacity) (lp rest)))))]
+               [else
+                (+ (color->number opacity) (lp rest))]))))])))
+
 (define (ray-gun camera)
   (define view (<camera> view camera))
   (define xt
@@ -219,6 +249,21 @@
         (do ([y 0 (+ y 1)]) ((= y height))
           (do ([x 0 (+ x 1)]) ((= x width))
             (set-pixel x y (exposure (antialias x y)))))))))
+
+(define (depth-simple camera display scene depth)
+  (define shoot-ray (ray-gun camera))
+  (define (f x y)
+    (let ([ray (shoot-ray x y)])
+      (fluid-let ([E (<ray> origin ray)])
+        (pixel-depth-from-ray scene ray))))
+  (let ([width (<camera> output-width camera)]
+        [height (<camera> output-height camera)])
+    (image-normalize
+     (make-image width height 0 0
+       (lambda (set-pixel)
+         (do ([y 0 (+ y 1)]) ((= y height))
+           (do ([x 0 (+ x 1)]) ((= x width))
+             (set-pixel x y (f x y)))))))))
 
 (define (render f filename camera display scene)
   (let ([image (time (f camera display scene MAXDEPTH))])
