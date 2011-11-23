@@ -747,5 +747,67 @@
                  [gain 1] [gamma 1]))))
   )
 
+(group params
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "param-" (car p))]
+           [pre (cadr p)]
+           [shader (caddr p)])
+       ($build name
+         `(,@pre
+           (render image-simple ,name
+             (<camera> make
+               (output-width 512)
+               (output-height 512)
+               (translation (make-vec 0 0 10))
+               (target (make-vec 0 0 0))
+               (distance 0)
+               (view
+                (<view> make (left -.5) (right 4.5) (bottom -.5) (top 4.5))))
+             (<display> make
+               (x-samples 1) (y-samples 1)
+               (filter gaussian-filter)
+               (x-width 2/3) (y-width 2/3)
+               (gain 1) (gamma 1))
+             (<scene> make
+               (background-color (make-color 0 0.3 0.3))
+               (objects
+                (append
+                 (list-of
+                  (sphere
+                   [center (make-vec x y 0)]
+                   [radius 7/16]
+                   [color (make-color 0 0.8 0)]
+                   [surface ,shader])
+                  ([x (iota 5)]
+                   [y (iota 5)]))
+                 (list
+                  (plane
+                   [center (make-vec 0 0 -1)]
+                   [surface (checker [frequency 2])]))))
+               (lights
+                (list
+                 (distant-light
+                  (shadow? #f)
+                  (position (make-vec 0 0 10))
+                  (color white)
+                  (intensity 1))))))))))
+   `(("glass"
+      ((define xt (make-linear-transform 0 4 0 1))
+       (define yt (make-linear-transform 0 4 0 1)))
+      (glass [Kr (xt x)] [Kt (yt y)]))
+     ("marble"
+      ()
+      (marble [octaves (+ x 2)] [lacunarity y]))
+     ("mirror"
+      ((define xt (make-linear-transform 0 4 0 1))
+       (define yt (make-linear-transform 0 4 0 1)))
+      (mirror [Ks (xt x)] [Kr (yt y)]))
+     ("screen"
+      ((define xt (make-linear-transform 0 4 0.1 0.5))
+       (define yt (make-linear-transform 0 4 3 20)))
+      (screen [density (xt x)] [frequency (exact (truncate (yt y)))]))))
+  )
+
 (write-sources)
 (exit)
