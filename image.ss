@@ -29,36 +29,52 @@
 (define (image-ref img i j)
   (vector-ref (<image> pixels img) (image-index img i j)))
 
+(define (image-normalize image)
+  (let* ([pixels (<image> pixels image)]
+         [mag (do ([i 0 (+ i 1)] [mag 0 (max mag (vector-ref pixels i))])
+                  ((= i (vector-length pixels)) mag))])
+    (if (= mag 0)
+        image
+        (<image> copy image
+          [pixels (vector-map (lambda (x) (/ x mag)) pixels)]))))
+
 (define (as-byte x)
   (exact (min (truncate (* (max 0 x) 255)) 255)))
 
 (define (write-tga image filename)
   (let* ([filename (string-append filename ".tga")]
-         [op (open-file-output-port filename (file-options no-fail))])
+         [op (open-file-output-port filename (file-options no-fail))]
+         [color? (<color> is? (image-ref image 0 0))]
+         [image-type (if color? 2 3)]
+         [pixel-depth (if color? 24 8)])
     (define (write8 x)
       (put-u8 op x))
     (define (write16 x)
       (write8 (logand x #xFF))
       (write8 (logand (ash x -8) #xFF)))
     ;; Header
-    (write8 0)                   ; ID Length
-    (write8 0)                   ; Color Map Type
-    (write8 2)                   ; Image Type: Uncompressed True-color
+    (write8 0)                          ; ID Length
+    (write8 0)                          ; Color Map Type
+    (write8 image-type)                 ; Image Type
     (do ([i 0 (+ i 1)]) ((= i 5))       ; Color Map Specification
       (write8 0))
     (write16 (<image> x-origin image))
     (write16 (<image> y-origin image))
     (write16 (<image> width image))
     (write16 (<image> height image))
-    (write8 24)                         ; Pixel Depth; bits per pixel
+    (write8 pixel-depth)                ; Pixel Depth; bits per pixel
     (write8 0)                          ; Image Descriptor
     ;; Data
-    (vector-for-each
-     (lambda (pixel)
-       (write8 (as-byte (<color> b pixel)))
-       (write8 (as-byte (<color> g pixel)))
-       (write8 (as-byte (<color> r pixel))))
-     (<image> pixels image))
+    (if color?
+        (vector-for-each
+         (lambda (pixel)
+           (write8 (as-byte (<color> b pixel)))
+           (write8 (as-byte (<color> g pixel)))
+           (write8 (as-byte (<color> r pixel))))
+         (<image> pixels image))
+        (vector-for-each
+         (lambda (pixel) (write8 (as-byte pixel)))
+         (<image> pixels image)))
     (close-port op)))
 
 (define (read-texture-file filename)
@@ -74,6 +90,10 @@
   (read-tga filename
     (lambda (r g b a)
       (make-vec (t r) (t g) (t b)))))
+
+(define (read-depth-file filename)
+  ;; Depths are stored in the range [0, 255] but represent [0, 1]
+  (read-tga filename (make-linear-transform 0 255 0.0 1.0)))
 
 (define (read-tga filename proc)
   (define-syntax assert
@@ -94,10 +114,16 @@
     (define (read8)
       (get-u8 ip))
     (define (read-pixel pixel-depth)
-      (let* ([b (read8)]
-             [g (read8)]
-             [r (read8)])
-        (proc r g b (and (= pixel-depth 32) (read8)))))
+      (cond
+       [(= pixel-depth 8)
+        (proc (read8))]
+       [(>= pixel-depth 24)
+        (let* ([b (read8)]
+               [g (read8)]
+               [r (read8)])
+          (proc r g b (and (= pixel-depth 32) (read8))))]
+       [else
+        (errorf 'read-pixel "invalid pixel depth ~a" pixel-depth)]))
     (let ([hdr (read-header ip)])
       (assert (= 0 (get8 hdr 0))
         (errorf #f "ID Length: ~a but expected 0" (get8 hdr 0)))
@@ -114,7 +140,8 @@
             [pixel-depth (get8 hdr 16)]
             [image-descriptor (get8 hdr 17)])
         (cond
-         [(= image-type 2)              ; Uncompressed
+         [(or (= image-type 2)          ; Uncompressed true color
+              (= image-type 3))         ; Uncompressed black and white
           (assert (= 0 image-descriptor)
             (errorf #f "Image Descriptor: ~a not handled in uncompressed mode"
               image-descriptor))
