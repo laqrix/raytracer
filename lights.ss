@@ -20,7 +20,7 @@
     [(,_ . ,val) val]
     [,_ 0]))
 
-(define (shadow-color point light-pos)
+(define (visibility point light-pos)
   ;; This style function allows for the implementation of shadow maps,
   ;; or translucent shadows. I already know that running the surface
   ;; and volume shaders are too slow, and thus this implementation
@@ -42,42 +42,46 @@
 (define-syntax illuminate
   (syntax-rules ()
     [(_ ($from) body ...)
-     (let* ([from $from]
-            [shadow (shadow-color intersect-point from)])
-       (if (color=? shadow black)
-           black
-           (color-mul shadow
-             (fluid-let ([L (vec-sub intersect-point from)])
-               body ...))))]))
+     (let ([from $from])
+       (fluid-let ([L (vec-sub intersect-point from)])
+         body ...))]))
+
+(define (shadow-mul shadow? intersect-point from Cl)
+  (if shadow?
+      (color-mul Cl (visibility intersect-point from))
+      Cl))
 
 (define-light ambient-light ([color white] [intensity 1])
   ([__ambient 1] [__nondiffuse 1] [__nonspecular 1])
   (color-num-mul color intensity))
 
-(define-light distant-light ([color white] [intensity 1]) ()
+(define-light distant-light ([color white] [intensity 1] [shadow? #t]) ()
   (let ([from (light-position light)])
     (illuminate (from)
-      (color-num-mul color intensity))))
+      (shadow-mul shadow? intersect-point from
+        (color-num-mul color intensity)))))
 
-(define-light point-light ([color white] [intensity 1]) ()
+(define-light point-light ([color white] [intensity 1] [shadow? #t]) ()
   (let ([from (light-position light)])
     (illuminate (from)
-      (color-num-mul color (/ intensity (vec-dot L L))))))
+      (shadow-mul shadow? intersect-point from
+        (color-num-mul color (/ intensity (vec-dot L L)))))))
 
 (define-light spot-light
-  ([color white] [intensity 1] [target (make-vec 0 0 1)]
+  ([color white] [intensity 1] [shadow? #t] [target (make-vec 0 0 1)]
    [coneangle 30] [coneangle-delta 5] [beamdistribution 2]) ()
   (let ([from (light-position light)])
     (illuminate (from)
-      (let* ([A (vec-normalize (vec-sub target from))]
-             [cosangle (/ (vec-dot L A) (vec-length L))]
-             [coneangle (degrees->radians coneangle)])
-        (if (< (acos cosangle) coneangle)
-            (let* ([cosoutside (cos coneangle)]
-                   [cosinside
-                    (cos (- coneangle (degrees->radians coneangle-delta)))]
-                   [atten
-                    (* (/ (expt cosangle beamdistribution) (vec-dot L L))
-                       (smoothstep cosoutside cosinside cosangle))])
-              (color-num-mul color (* intensity atten)))
-            black)))))
+      (shadow-mul shadow? intersect-point from
+        (let* ([A (vec-normalize (vec-sub target from))]
+               [cosangle (/ (vec-dot L A) (vec-length L))]
+               [coneangle (degrees->radians coneangle)])
+          (if (< (acos cosangle) coneangle)
+              (let* ([cosoutside (cos coneangle)]
+                     [cosinside
+                      (cos (- coneangle (degrees->radians coneangle-delta)))]
+                     [atten
+                      (* (/ (expt cosangle beamdistribution) (vec-dot L L))
+                         (smoothstep cosoutside cosinside cosangle))])
+                (color-num-mul color (* intensity atten)))
+              black))))))
