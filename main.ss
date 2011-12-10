@@ -14,7 +14,7 @@
 
 (define-record <view> left right bottom top)
 (define-record <camera>
-  output-width output-height translation target distance view)
+  output-width output-height type position target view)
 (define-record <display> x-samples y-samples filter x-width y-width gain gamma)
 
 (define-record <intersect> time object extra)
@@ -129,32 +129,27 @@
   (define yt
     (make-linear-transform 0 (- (<camera> output-height camera) 1)
       (<view> bottom view) (<view> top view)))
-  
-  (let ([up (make-vec 0 1 0)]
-        [dir (vec-sub (<camera> target camera)
-               (<camera> translation camera))])
-    (let* ([u (vec-normalize (vec-cross up dir))]
-           [v (vec-normalize (vec-cross dir u))]
-           [n (vec-normalize dir)]
-           [R (make-matrix 3 3
-                (lambda (dm dn a)
-                  (a 1 1 (vec-i u))
-                  (a 1 2 (vec-j u))
-                  (a 1 3 (vec-k u))
-                  (a 2 1 (vec-i v))
-                  (a 2 2 (vec-j v))
-                  (a 2 3 (vec-k v))
-                  (a 3 1 (vec-i n))
-                  (a 3 2 (vec-j n))
-                  (a 3 3 (vec-k n))))]
-           [eye (vec-add
-                 (mat-vec-mul R (vec-num-mul n (<camera> distance camera)))
-                 (<camera> translation camera))])
-      (lambda (x y)
-        (<ray> make
-          [origin eye]
-          [direction (vec-normalize
-                      (vec-sub (make-vec (xt x) (yt y) 0) eye))])))))
+  (define (vlincomb3 k1 v1 k2 v2 k3 v3)
+    (make-vec
+     (+ (* k1 (vec-i v1)) (* k2 (vec-i v2)) (* k3 (vec-i v3)))
+     (+ (* k1 (vec-j v1)) (* k2 (vec-j v2)) (* k3 (vec-j v3)))
+     (+ (* k1 (vec-k v1)) (* k2 (vec-k v2)) (* k3 (vec-k v3)))))
+  (let* ([pos (<camera> position camera)]
+         [up (make-vec 0 1 0)]
+         [dir (vec-sub (<camera> target camera) pos)]
+         [u (vec-normalize (vec-cross dir up))]
+         [v (vec-normalize (vec-cross u dir))])
+    (match (<camera> type camera)
+      [perspective
+       (lambda (x y)
+         (<ray> make
+           [origin pos]
+           [direction (vlincomb3 1 dir (xt x) u (yt y) v)]))]
+      [orthographic
+       (lambda (x y)
+         (<ray> make
+           [origin (vlincomb3 1 pos (xt x) u (yt y) v)]
+           [direction dir]))])))
 
 (define (make-antialias display get-color)
   (define x-samples (<display> x-samples display))

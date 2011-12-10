@@ -5,9 +5,9 @@
   `(<camera> make
      [output-width ,width]
      [output-height ,height]
-     [translation (make-vec 0 0 10)]
+     [type 'perspective]
+     [position (make-vec 0 0 10)]
      [target (make-vec 0 0 0)]
-     [distance 1]
      [view
       (<view> make
         (left (* -2 16/10)) (right (* 2 16/10))
@@ -759,9 +759,9 @@
              (<camera> make
                (output-width 512)
                (output-height 512)
-               (translation (make-vec 0 0 10))
+               (type 'orthographic)
+               (position (make-vec 0 0 10))
                (target (make-vec 0 0 0))
-               (distance 0)
                (view
                 (<view> make (left -.5) (right 4.5) (bottom -.5) (top 4.5))))
              (<display> make

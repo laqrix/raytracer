@@ -4,10 +4,10 @@
   (<camera> make
     [output-width 640]
     [output-height 480]
-    [translation (make-vec 320 240 -1000)]
+    [type 'perspective]
+    [position (make-vec 320 240 1000)]
     [target (make-vec 320 240 0)]
-    [distance 1]
-    [view (<view> make [left 0] [right 639] [bottom 0] [top 479])])
+    [view (<view> make [left -320] [right 320] [bottom -240] [top 240])])
   (<display> make
     [x-samples 2]
     [y-samples 2]
@@ -36,10 +36,10 @@
     [lights
      (list
       (distant-light
-       [position (make-vec 0 240 -100)]
+       [position (make-vec 0 240 100)]
        [color white]
        [intensity 1])
       (distant-light
-       [position (make-vec 640 240 -10000)]
+       [position (make-vec 640 240 10000)]
        [color (make-color .6 .7 1)]
        [intensity .5]))]))
