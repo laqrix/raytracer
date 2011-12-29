@@ -62,8 +62,8 @@
     (write16 (<image> y-origin image))
     (write16 (<image> width image))
     (write16 (<image> height image))
-    (write8 pixel-depth)                ; Pixel Depth; bits per pixel
-    (write8 0)                          ; Image Descriptor
+    (write8 pixel-depth)          ; Pixel Depth; bits per pixel
+    (write8 32)                   ; Image Descriptor (top-left origin)
     ;; Data
     (if color?
         (vector-for-each
@@ -96,9 +96,6 @@
   (read-tga filename (make-linear-transform 0 255 0.0 1.0)))
 
 (define (read-tga filename proc)
-  (define-syntax assert
-    (syntax-rules ()
-      [(_ pred e1 e2 ...) (unless pred e1 e2 ...)]))
   (define (read-header ip)
     (define size 18)
     (let ([x (get-bytevector-n ip size)])
@@ -124,70 +121,46 @@
           (proc r g b (and (= pixel-depth 32) (read8))))]
        [else
         (errorf 'read-pixel "invalid pixel depth ~a" pixel-depth)]))
-    (let ([hdr (read-header ip)])
-      (assert (= 0 (get8 hdr 0))
-        (errorf #f "ID Length: ~a but expected 0" (get8 hdr 0)))
-      (assert (= 0 (get8 hdr 1))
-        (errorf #f "Color Map Type: ~a but expected 0" (get8 hdr 0)))
-      (do ([i 0 (+ i 1)]) ((= i 5))
-        (assert (= 0 (get8 hdr (+ 3 i)))
-          (errorf #f "Color Map Specification: expected all 0s")))
-      (let ([image-type (get8 hdr 2)]
-            [xo (get16 hdr 8)]
-            [yo (get16 hdr 10)]
-            [width (get16 hdr 12)]
-            [height (get16 hdr 14)]
-            [pixel-depth (get8 hdr 16)]
-            [image-descriptor (get8 hdr 17)])
-        (cond
-         [(or (= image-type 2)          ; Uncompressed true color
-              (= image-type 3))         ; Uncompressed black and white
-          (assert (= 0 image-descriptor)
-            (errorf #f "Image Descriptor: ~a not handled in uncompressed mode"
-              image-descriptor))
-          (make-image width height xo yo
-            (lambda (set-pixel)
+    (let* ([hdr (read-header ip)]
+           [image-type (get8 hdr 2)]
+           [xo (get16 hdr 8)]
+           [yo (get16 hdr 10)]
+           [width (get16 hdr 12)]
+           [height (get16 hdr 14)]
+           [pixel-depth (get8 hdr 16)]
+           [image-descriptor (get8 hdr 17)]
+           [color-type (fxlogand image-type 3)]
+           [rle? (fxlogbit? 3 image-type)]
+           [xt (if (fxlogbit? 4 image-descriptor)
+                   (lambda (x) (- (- width 1) x))
+                   (lambda (x) x))]
+           [yt (if (fxlogbit? 5 image-descriptor)
+                   (lambda (y) y)
+                   (lambda (y) (- (- height 1) y)))])
+      (unless (<= 0 image-type 11)
+        (errorf #f "Image Type: unhandled type ~a" image-type))
+      (unless (or (= color-type 2) (= color-type 3))
+        (errorf #f "Color Type: unhandled type ~a" color-type))
+      (make-image width height xo yo
+        (lambda (set-pixel)
+          (if (not rle?)
               (do ([y 0 (+ y 1)]) ((= y height))
                 (do ([x 0 (+ x 1)]) ((= x width))
-                  (set-pixel x y (read-pixel pixel-depth))))))]
-         [(= image-type 10)             ; Run length encoded
-          (<image> make
-            [width width] [height height]
-            [x-origin xo] [y-origin yo]
-            [pixels
-             (let* ([size (fx* width height)]
-                    [store (make-vector size #f)])
-               (let lp ([i 0])
-                 (if (= i size)
-                     (cond
-                      [(= image-descriptor 0) store]
-                      [(= image-descriptor 32) ; flip vertically
-                       (let ()
-                         (define (index i j)
-                           (fx+ (fx* j width) i))
-                         (do ([y 0 (+ y 1)]) ((= y (/ height 2)))
-                           (do ([x 0 (+ x 1)]) ((= x width))
-                             (let* ([i1 (index x y)]
-                                    [i2 (index x (- height y 1))]
-                                    [c1 (vector-ref store i1)]
-                                    [c2 (vector-ref store i2)])
-                               (vector-set! store i1 c2)
-                               (vector-set! store i2 c1))))
-                         store)]
-                      [else
-                       (errorf #f "Image Descriptor: ~a not handled in RLE mode" image-descriptor)])
-                     (lp (let* ([packet (read8)]
-                                [run-length? (fxlogbit? 7 packet)]
-                                [length (+ (fxlogbit0 7 packet) 1)])
-                           (if run-length?
-                               (let ([color (read-pixel pixel-depth)])
-                                 (do ([j 0 (+ j 1)]
-                                      [i i (+ i 1)])
-                                     ((= j length) i)
-                                   (vector-set! store i color)))
-                               (do ([j 0 (+ j 1)]
-                                    [i i (+ i 1)])
-                                   ((= j length) i)
-                                 (vector-set! store i (read-pixel pixel-depth)))))))))])]
-         [else
-          (errorf #f "Image Type: unhandled type ~a" image-type)])))))
+                  (set-pixel (xt x) (yt y) (read-pixel pixel-depth))))
+              (do ([y 0 (+ y 1)]) ((= y height))
+                (let lp ([x 0])
+                  (unless (= x width)
+                    (lp (let* ([packet (read8)]
+                               [run-length? (fxlogbit? 7 packet)]
+                               [length (+ (fxlogbit0 7 packet) 1)])
+                          (if run-length?
+                              (let ([color (read-pixel pixel-depth)])
+                                (do ([j 0 (+ j 1)]
+                                     [x x (+ x 1)])
+                                    ((= j length) x)
+                                  (set-pixel (xt x) (yt y) color)))
+                              (do ([j 0 (+ j 1)]
+                                   [x x (+ x 1)])
+                                  ((= j length) x)
+                                (set-pixel (xt x) (yt y)
+                                  (read-pixel pixel-depth)))))))))))))))

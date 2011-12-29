@@ -128,7 +128,7 @@
       (<view> left view) (<view> right view)))
   (define yt
     (make-linear-transform 0 (- (<camera> output-height camera) 1)
-      (<view> bottom view) (<view> top view)))
+      (<view> top view) (<view> bottom view)))
   (define (vlincomb3 k1 v1 k2 v2 k3 v3)
     (make-vec
      (+ (* k1 (vec-i v1)) (* k2 (vec-i v2)) (* k3 (vec-i v3)))
