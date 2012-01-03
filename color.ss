@@ -81,3 +81,79 @@
     (when (< edges 1)
       (errorf 'color-spline "not enough edges to spline colors"))
     (color-spline-helper (* x edges) ls)))
+
+;; Color space conversions
+
+(define (hcx->rgb hp c x m)
+  (define (rgb r1 g1 b1 m)
+    (values (+ r1 m) (+ g1 m) (+ b1 m)))
+  (cond
+   [(<= 0 hp 1) (rgb c x 0 m)]
+   [(<= 1 hp 2) (rgb x c 0 m)]
+   [(<= 2 hp 3) (rgb 0 c x m)]
+   [(<= 3 hp 4) (rgb 0 x c m)]
+   [(<= 4 hp 5) (rgb x 0 c m)]
+   [(<= 5 hp 6) (rgb c 0 x m)]))
+
+(define (hsl->rgb h s l)
+  ;; h = [0, 360], s,l = [0, 1]
+  (define (rgb r1 g1 b1 m)
+    (values (+ r1 m) (+ g1 m) (+ b1 m)))
+  (let* ([hp (/ (mod h 360) 60)]
+         [c (* (- 1 (abs (- (* 2 l) 1))) s)]
+         [x (* c (- 1 (abs (- (mod hp 2) 1))))]
+         [m (- l (/ c 2))])
+    (hcx->rgb hp c x m)))
+
+(define (hsv->rgb h s v)
+  ;; h = [0, 360], s,v = [0, 1]
+  (define (rgb r1 g1 b1 m)
+    (values (+ r1 m) (+ g1 m) (+ b1 m)))
+  (let* ([hp (/ (mod h 360) 60)]
+         [c (* v s)]
+         [x (* c (- 1 (abs (- (mod hp 2) 1))))]
+         [m (- v c)])
+    (hcx->rgb hp c x m)))
+
+(define (hue&chroma r g b)
+  ;; r,g,b = [0, 1]
+  (let* ([m (min r g b)]
+         [M (max r g b)]
+         [c (- M m)]
+         [hp (if (= c 0)
+                 0
+                 (cond
+                  [(= M r) (mod (/ (- g b) c) 6)]
+                  [(= M g) (+ (/ (- b r) c) 2)]
+                  [(= M b) (+ (/ (- r g) c) 4)]
+                  [else (errorf 'hue&chroma "undefined hue")]))]
+         [h (* hp 60)])
+    (values h c m M)))
+
+(define (rgb->hsl r g b)
+  (let-values ([(h c m M) (hue&chroma r g b)])
+    (let* ([l (/ (+ M m) 2)]
+           [s (if (= c 0)
+                  0
+                  (/ c (- 1 (abs (- (* 2 l) 1)))))])
+      (values h s l))))
+
+(define (rgb->hsv r g b)
+  (let-values ([(h c m M) (hue&chroma r g b)])
+    (let* ([v M]
+           [s (if (= c 0)
+                  0
+                  (/ c v))])
+      (values h s v))))
+
+(define color
+  (case-lambda
+   [(x) (make-color x x x)]
+   [(r g b) (make-color r g b)]
+   [(space u v w)
+    (match space
+      ["rgb" (make-color u v w)]
+      ["hsl" (let-values ([(r g b) (hsl->rgb (* u 360) v w)])
+               (make-color r g b))]
+      ["hsv" (let-values ([(r g b) (hsv->rgb (* u 360) v w)])
+               (make-color r g b))])]))
