@@ -10,11 +10,6 @@
 
 (define (sqr x) (* x x))
 
-(define (fmod n modulus)
-  (if (negative? n)
-      (do ([n n (+ n modulus)]) ((positive? n) n))
-      (do ([n n (- n modulus)]) ((negative? n) (+ n modulus)))))
-
 (define (clamp x xmin xmax)
   (max xmin (min x xmax)))
 
@@ -171,13 +166,13 @@
   (- (step edge0 x) (step edge1 x)))
 
 (define (pulsetrain edge period x)
-  (pulse edge period (fmod x period)))
+  (pulse edge period (mod x period)))
 
 (define (smoothpulse e0 e1 e2 e3 x)
   (- (smoothstep e0 e1 x) (smoothstep e2 e3 x)))
 
 (define (smoothpulsetrain e0 e1 e2 e3 period x)
-  (smoothpulse e0 e1 e2 e3 (fmod x period)))
+  (smoothpulse e0 e1 e2 e3 (mod x period)))
 
 (define (fadeout g g-avg featuresize fwidth)
   (mix-num g g-avg (smoothstep .2 .6 (/ fwidth featuresize))))

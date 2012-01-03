@@ -45,7 +45,7 @@
   (let ([pnt (point->surface object intersect-point)]
         [Nf (faceforward (vec-normalize normal) incoming)])
     (let* ([t (vec-j pnt)]
-           [tmod (fmod (* t frequency) 1)])
+           [tmod (mod (* t frequency) 1)])
       (color-mul Os
         (if (< tmod .5)
             Cs
@@ -57,9 +57,9 @@
 (define-shader checker ([Kd 1] [Ka .5] [frequency 4] [blackcolor black])
   (let ([pnt (point->surface object intersect-point)]
         [Nf (faceforward (vec-normalize normal) incoming)])
-    (let ([xmod (fmod (* (vec-i pnt) frequency) (+ 1 EPSILON))]
-          [ymod (fmod (* (vec-j pnt) frequency) (+ 1 EPSILON))]
-          [zmod (fmod (* (vec-k pnt) frequency) (+ 1 EPSILON))])
+    (let ([xmod (mod (* (vec-i pnt) frequency) (+ 1 EPSILON))]
+          [ymod (mod (* (vec-j pnt) frequency) (+ 1 EPSILON))]
+          [zmod (mod (* (vec-k pnt) frequency) (+ 1 EPSILON))])
       (color-mul Os
         (if (< zmod .5)
             (if (< xmod .5)
@@ -249,8 +249,8 @@
   ([Ka 1] [Kd .75] [Ks .4] [roughness .1] [specularcolor white]
    [density .25] [frequency 20])
   (let ([st (point->texture object (point->surface object intersect-point))])
-    (if (or (< (fmod (* (vec-i st) frequency) 1) density)
-            (< (fmod (* (vec-j st) frequency) 1) density))
+    (if (or (< (mod (* (vec-i st) frequency) 1) density)
+            (< (mod (* (vec-j st) frequency) 1) density))
         (let ([Nf (faceforward (vec-normalize normal) incoming)]
               [V  (vec-normalize (vec-reverse incoming))])
           (values

@@ -171,7 +171,7 @@
    0.5))
 
 (define (plane-point->texture object point)
-  (make-vec (fmod (vec-i point) 1) (fmod (vec-j point) 1) 0))
+  (make-vec (mod (vec-i point) 1) (mod (vec-j point) 1) 0))
 
 (define (polyhedron-intersections obj ray)
   (let ([origin (<ray> origin ray)]
