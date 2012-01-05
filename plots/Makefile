@@ -9,7 +9,7 @@ all: render
 include .src
 
 %.eps: %.asy
-	asy $<
+	asy -noView $<
 
 %.png: %.eps
 	convert -flatten $< $@
