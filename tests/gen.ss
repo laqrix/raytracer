@@ -809,6 +809,69 @@
       (screen [density (xt x)] [frequency (exact (truncate (yt y)))]))))
   )
 
+(group images
+  (build "image-color"
+    (let ([width 200]
+          [height 200])
+      (write-tga
+       (make-image width height 0 0
+         (lambda (set-pixel)
+           (do ([y 0 (+ y 1)]) ((= y height))
+             (do ([x 0 (+ x 1)]) ((= x width))
+               (set-pixel x y (make-color (/ x width) (/ y height) 0))))))
+       "image-color")))
+
+  (build "image-gray"
+    (let ([width 200]
+          [height 200])
+      (write-tga
+       (make-image width height 0 0
+         (lambda (set-pixel)
+           (do ([y 0 (+ y 1)]) ((= y height))
+             (do ([x 0 (+ x 1)]) ((= x width))
+               (set-pixel x y (* (/ x width) (/ y height)))))))
+       "image-gray")))
+
+  (build "image-noise"
+    (let* ([width 200]
+           [height 200]
+           [xt (make-linear-transform 0 (- width 1) 0.0 10.0)]
+           [yt (make-linear-transform 0 (- height 1) 0.0 10.0)])
+      (write-tga
+       (make-image width height 0 0
+         (lambda (set-pixel)
+           (do ([y 0 (+ y 1)]) ((= y height))
+             (do ([x 0 (+ x 1)]) ((= x width))
+               (set-pixel x y (noise (make-vec (xt x) (yt y) 0)))))))
+       "image-noise")))
+
+  (build "image-hsl"
+    (let* ([width 200]
+           [height 200]
+           [xt (make-linear-transform 0 (- width 1) 0.0 1.0)]
+           [yt (make-linear-transform 0 (- height 1) 0.0 1.0)])
+      (write-tga
+       (make-image width height 0 0
+         (lambda (set-pixel)
+           (do ([y 0 (+ y 1)]) ((= y height))
+             (do ([x 0 (+ x 1)]) ((= x width))
+               (set-pixel x y (color "hsl" (xt x) 1 (yt y)))))))
+       "image-hsl")))
+
+  (build "image-hsv"
+    (let* ([width 200]
+           [height 200]
+           [xt (make-linear-transform 0 (- width 1) 0.0 1.0)]
+           [yt (make-linear-transform 0 (- height 1) 0.0 1.0)])
+      (write-tga
+       (make-image width height 0 0
+         (lambda (set-pixel)
+           (do ([y 0 (+ y 1)]) ((= y height))
+             (do ([x 0 (+ x 1)]) ((= x width))
+               (set-pixel x y (color "hsv" (xt x) 1 (yt y)))))))
+       "image-hsv")))
+  )
+
 (group voronoi
   (for-each
    (lambda (p)
