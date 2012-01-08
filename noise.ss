@@ -107,3 +107,73 @@
           (+ sum (* amp (abs (snoise pp))))
           (* amp gain)
           (vec-num-mul pp lacunarity)))))
+
+;; Cellular and Voronoi Noise
+
+(define (cellnoise x)
+  (define (center x) (+ (floor x) 0.5))
+  (+ 0.5
+     (if (vec? x)
+         (perlin-noise
+          (center (vec-i x)) (center (vec-j x)) (center (vec-k x)))
+         (perlin-noise (center x) 0 0))))
+
+(define (vec-cellnoise x)
+  (let ([n (cellnoise x)])
+    (make-vec n n n)))
+
+(define (distance a b)
+  (let ([v (vec-sub a b)])
+    (vec-length v)))
+
+(define (distance2 a b)
+  (let ([v (vec-sub a b)])
+    (vec-dot v v)))
+
+(define (distance-manhattan a b)
+  (let ([v (vec-sub a b)])
+    (+ (abs (vec-i v)) (abs (vec-j v)) (abs (vec-k v)))))
+
+(define (distance-chebyshev a b)
+  (let ([v (vec-sub a b)])
+    (max (abs (vec-i v)) (abs (vec-j v)) (abs (vec-k v)))))
+
+(define (distance-quadratic a b)
+  (let ([v (vec-sub a b)])
+    (let ([x (vec-i v)] [y (vec-j v)] [z (vec-k v)])
+      (+ (* x x) (* y y) (* z z) (* x y) (* x z) (* y z)))))
+
+(define (make-distance-minkowski order)
+  (lambda (a b)
+    (let ([v (vec-sub a b)])
+      (expt
+       (+ (expt (abs (vec-i v)) order)
+          (expt (abs (vec-j v)) order)
+          (expt (abs (vec-k v)) order))
+       (/ 1 order)))))
+
+(define (voronoi* p jitter distance)
+  (let* ([thiscell (make-vec (+ (floor (vec-i p)) 0.5)
+                     (+ (floor (vec-j p)) 0.5)
+                     (+ (floor (vec-k p)) 0.5))])
+    (sort! fl<
+      (list-of
+       (let* ([testcell (vec-add thiscell (make-vec i j k))]
+              [pos (vec-add testcell
+                     (vec-num-mul
+                      (vec-num-add (vec-cellnoise testcell) -0.5)
+                      jitter))])
+         (distance pos p))
+       ([i '(-1 0 1)]
+        [j '(-1 0 1)]
+        [k '(-1 0 1)])))))
+
+(define (voronoi p jitter feature distance)
+  ;; feature=[0, 26], but only [0, 3] are practical
+  (let ([ls (voronoi* p jitter distance)])
+    (list-ref ls feature)))
+
+(define (voronoi-diff p jitter f1 f2 distance)
+  ;; f1,f2=[0, 26], but only [0, 3] are practical
+  (let ([ls (voronoi* p jitter distance)])
+    (- (list-ref ls f1) (list-ref ls f2))))

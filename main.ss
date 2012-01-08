@@ -5,7 +5,6 @@
 (include "defaults.ss")
 (include "math.ss")
 (include "color.ss")
-(include "noise.ss")
 
 (define EPSILON 0.0005)
 (define MAXDEPTH 5)
@@ -49,6 +48,7 @@
      (reverse
       (list-of-helper '() $exp ([$var $gen] . $rest) $guard))]))
 
+(load "noise.ss")
 (load "shaders.ss")
 (load "lights.ss")
 (load "objects.ss")

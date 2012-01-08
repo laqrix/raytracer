@@ -809,5 +809,59 @@
       (screen [density (xt x)] [frequency (exact (truncate (yt y)))]))))
   )
 
+(group voronoi
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "voronoi-" (car p))]
+           [dist (cdr p)])
+       ($build name
+         `((let* ([width 100]
+                  [height 100]
+                  [xt (make-linear-transform 0 (- width 1) 0.0 10.0)]
+                  [yt (make-linear-transform 0 (- height 1) 0.0 10.0)])
+             (write-tga
+              (make-image width height 0 0
+                (lambda (set-pixel)
+                  (do ([y 0 (+ y 1)]) ((= y height))
+                    (do ([x 0 (+ x 1)]) ((= x width))
+                      (set-pixel x y
+                        (color (voronoi (make-vec (xt x) (yt y) 0)
+                                 1 0 ,dist)))))))
+              ,name))))))
+   `(("distance" . distance)
+     ("distance2" . distance2)
+     ("manhattan" . distance-manhattan)
+     ("chebyshev" . distance-chebyshev)
+     ("quadratic" . distance-quadratic)
+     ("minkowski4" . (make-distance-minkowski 4))
+     ("minkowski.5" . (make-distance-minkowski 0.5))))
+
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "voronoi-diff-" (car p))]
+           [dist (cdr p)])
+       ($build name
+         `((let* ([width 100]
+                  [height 100]
+                  [xt (make-linear-transform 0 (- width 1) 0.0 10.0)]
+                  [yt (make-linear-transform 0 (- height 1) 0.0 10.0)])
+             (write-tga
+              (make-image width height 0 0
+                (lambda (set-pixel)
+                  (do ([y 0 (+ y 1)]) ((= y height))
+                    (do ([x 0 (+ x 1)]) ((= x width))
+                      (set-pixel x y
+                        (color (voronoi-diff (make-vec (xt x) (yt y) 0)
+                                 1 1 0 ,dist)))))))
+              ,name))))))
+   `(("distance" . distance)
+     ("distance2" . distance2)
+     ("manhattan" . distance-manhattan)
+     ("chebyshev" . distance-chebyshev)
+     ("quadratic" . distance-quadratic)
+     ("minkowski4" . (make-distance-minkowski 4))
+     ("minkowski.5" . (make-distance-minkowski 0.5))))
+  )
+
 (write-sources)
 (exit)
