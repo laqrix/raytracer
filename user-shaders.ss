@@ -113,15 +113,6 @@
       (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
       specularcolor))))
 
-(define-shader simple-bumpmap
-  ([normals #f]
-   [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let* ([st (point->texture object
-               (point->surface object intersect-point))]
-         [ss (/ (- (vec-i st) sstart) sscale)]
-         [tt (/ (- (vec-j st) tstart) tscale)])
-    (normals ss tt)))
-
 (define-shader marble
   ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor white]
    [octaves 6] [lacunarity 2] [gain .5]
@@ -309,3 +300,53 @@
          [P (point->surface object intersect-point)]
          [cubeP (vec-mul (vec-sub P zero) scale)])
     (make-color (vec-i cubeP) (vec-j cubeP) (vec-k cubeP))))
+
+(define-shader simple-bumpmap
+  ([normals #f]
+   [sstart 0] [sscale 1] [tstart 0] [tscale 1])
+  (let* ([st (point->texture object
+               (point->surface object intersect-point))]
+         [ss (/ (- (vec-i st) sstart) sscale)]
+         [tt (/ (- (vec-j st) tstart) tscale)])
+    (normals ss tt)))
+
+(module perlin-helpers
+  (noise stripes turbulence)
+  ;; Based on Ken Perlin's bump textures
+  (define (noise x y z freq)
+    (let* ([x1 (- (* .707 x) (* .707 z))]
+           [z1 (+ (* .707 x) (* .707 z))]
+           [y1 (+ (* .707 x1) (* .707 y))]
+           [x1 (- (* .707 x1) (* .707 y))])
+      (perlin-noise (+ (* freq x1) 100) (* freq y1) (* freq z1))))
+
+  (define (stripes x f)
+    (- (sqr (+ .5 (* .5 (sin (* f 2 pi x))))) .5))
+
+  (define (turbulence x y z f)
+    (let lp ([f f] [t -0.5])
+      (if (> f 25)
+          t
+          (lp (* f 2) (+ t (abs (/ (noise x y z f) f)))))))
+  )
+
+(define-shader lumpy ()
+  (import perlin-helpers)
+  (let ([pnt (point->surface object intersect-point)])
+    (bump-normal pnt normal
+      (lambda (x y z)
+        (* 0.03 (noise x y z 8))))))
+
+(define-shader crinkly ()
+  (import perlin-helpers)
+  (let ([pnt (point->surface object intersect-point)])
+    (bump-normal pnt normal
+      (lambda (x y z)
+        (* -0.1 (turbulence x y z 1))))))
+
+(define-shader marbled ()
+  (import perlin-helpers)
+  (let ([pnt (point->surface object intersect-point)])
+    (bump-normal pnt normal
+      (lambda (x y z)
+        (* 0.01 (stripes (+ x (* 2 (turbulence x y z 1))) 1.6))))))

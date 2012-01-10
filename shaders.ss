@@ -47,6 +47,19 @@
                         (* external-index cos-theta1)))])
           (values r t reflection refraction)))))
 
+(define (bump-normal pnt normal f)
+  (let* ([x (vec-i pnt)]
+         [y (vec-j pnt)]
+         [z (vec-k pnt)]
+         [f0 (f x y z)]
+         [fx (f (+ x EPSILON) y z)]
+         [fy (f x (+ y EPSILON) z)]
+         [fz (f x y (+ z EPSILON))])
+    (make-vec
+     (- (vec-i normal) (/ (- fx f0) EPSILON))
+     (- (vec-j normal) (/ (- fy f0) EPSILON))
+     (- (vec-k normal) (/ (- fz f0) EPSILON)))))
+
 (define (sample-environment scene P R Kr depth)
   (pixel-color-from-ray scene
     (<ray> make [origin P] [direction R])

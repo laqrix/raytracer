@@ -367,6 +367,36 @@
      ("wood" . (wood))))
   )
 
+(group bumps
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "bump-" (car p))]
+           [disp (cadr p)]
+           [color (caddr p)])
+       ($build name
+         `((render image-simple ,name
+             ,default-camera
+             ,default-display
+             (<scene> make
+               [background-color (make-color 0 .3 .3)]
+               [objects
+                (list
+                 (sphere [color ,color]
+                   [surface (plastic)]
+                   [displacement ,disp]
+                   [M (scale 2 2 2)])
+                 (plane [center (make-vec 0 -3 0)]
+                   [M (matrix-mul (scale 9 9 9) (rotate-x -90))]
+                   [surface (matte)]))]
+               [lights
+                (list
+                 (ambient-light [intensity 0.1])
+                 (distant-light [position (make-vec 5 5 10)]))]))))))
+   `(("crinkly" (crinkly) (color .6 .4 .3))
+     ("lumpy" (lumpy) (color .6 .2 .1))
+     ("marbled" (marbled) (color .2 .4 .8))))
+  )
+
 (group transparent
   (for-each
    (lambda (p)
