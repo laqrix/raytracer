@@ -3,9 +3,9 @@ Simple raytracer in Scheme
 Implemented using Petite Chez Scheme 8.1 on a MacBook Pro.
 
 To run:
-> petite main.ss simple.ss
+> petite main.ss simple.scene
 
-This will load 'simple.ss' for the scene. Output will go to 'simple.tga'.
+This will load 'simple.scene' for the scene. Output will go to 'simple.tga'.
 
 ---
 
