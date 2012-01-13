@@ -45,61 +45,53 @@
     [else (errorf 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
 
-(define object)                         ; should really be in user env
-(define normal)                         ; should really be in user env
-(define incoming)                       ; should really be in user env
 (define (object-displace obj ip n)
   (cond
    [(object-displacement obj) =>
     (lambda (shader)
-      (fluid-let ([object obj]
-                  [intersect-point ip]
-                  [normal n])
+      (parameterize ([$object obj]
+                     [$P ip]
+                     [$Ng n]
+                     [$N n])
         (call-with-values shader
           (case-lambda
-           [(normal) (values intersect-point normal)]
+           [(normal) (values ip normal)]
            [(intersect-point normal) (values intersect-point normal)]))))]
    [else
     (values ip n)]))
 
-(define scene)                          ; should really be in user env
-(define Cs)                             ; should really be in user env
-(define Os)                             ; should really be in user env
-(define intersect-point)                ; should really be in user env
-(define depth)                          ; should really be in user env
-(define (object-shade s obj extra ip norm i d)
+(define (object-shade obj extra ip ng n i d)
   (cond
    [(object-surface obj) =>
     (lambda (shader)
-      (fluid-let ([scene s]
-                  [object obj]
-                  [Cs (object-color obj)]
-                  [Os (object-opacity obj)]
-                  [intersect-point ip]
-                  [normal norm]
-                  [incoming i]
-                  [depth d])
-        (call-with-values shader
-          (case-lambda
-           [(color) (values color Os)]
-           [(color opacity) (values color opacity)]))))]
+      (let ([st (delay (point->texture obj (point->surface obj ip)))])
+        (parameterize ([$object obj]
+                       [$depth d]
+                       [$P ip]
+                       [$Ng ng]
+                       [$N n]
+                       [$I i]
+                       [$s (delay (vec-i (force st)))]
+                       [$t (delay (vec-j (force st)))])
+          (call-with-values shader
+            (case-lambda
+             [(color) (values color Os)]
+             [(color opacity) (values color opacity)])))))]
    [(and (csg? obj) (<intersect> object extra))
-    (object-shade s (<intersect> object extra) (<intersect> extra extra)
-      ip norm i d)]
+    (object-shade (<intersect> object extra) (<intersect> extra extra)
+      ip ng n i d)]
    [else
     (errorf 'object-shade "no object shader defined for ~a" obj)]))
 
-(define Ci)                             ; should really be in user env
-(define Oi)                             ; should really be in user env
 (define (volume-shade obj ip i ci oi)
   (cond
    [(object-volume obj) =>
     (lambda (shader)
-      (fluid-let ([object obj]
-                  [intersect-point ip]
-                  [incoming i]
-                  [Ci ci]
-                  [Oi oi])
+      (parameterize ([$object obj]
+                     [$P ip]
+                     [$I i]
+                     [$Ci ci]
+                     [$Oi oi])
         (call-with-values shader
           (case-lambda
            [(color) (values color (object-opacity obj))]
@@ -112,7 +104,7 @@
    [(plane? object) (plane-point->surface object point)]
    [else
     (mat-vec-mul (object-Mi object)
-      (vec-sub intersect-point (object-center object)))]))
+      (vec-sub point (object-center object)))]))
 
 (define (point->texture object point)
   ;; Maps point from surface shader coordinates to texture coordinates
@@ -210,6 +202,7 @@
   (mat-vec-mul (object-M obj) extra))
 
 (define (quadric-intersections object ray)
+  ;; A x^2 + B y^2 + C z^2 + D xy + E xz + F yz + G x + H y + I z + J = 0
   (let ([origin (<ray> origin ray)]
         [direction (<ray> direction ray)])
     (let ([Xo (vec-i origin)] [Yo (vec-j origin)] [Zo (vec-k origin)]

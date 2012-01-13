@@ -60,11 +60,11 @@
      (- (vec-j normal) (/ (- fy f0) EPSILON))
      (- (vec-k normal) (/ (- fz f0) EPSILON)))))
 
-(define (sample-environment scene P R Kr depth)
-  (pixel-color-from-ray scene
+(define (sample-environment P R Kr)
+  (pixel-color-from-ray ($scene)
     (<ray> make [origin P] [direction R])
     Kr
-    (- depth 1)))
+    (- ($depth) 1)))
 
 (define-syntax fold-lights
   (syntax-rules ()
@@ -75,7 +75,7 @@
        (<scene> lights scene))]))
 
 (define-shader ambient ()
-  (fold-lights [light scene] [color black]
+  (fold-lights [light ($scene)] [color black]
     (let ([amb (light-property light '__ambient)])
       (if (> amb 0)
           (color-add color (color-num-mul (light-shade light) amb))
@@ -83,10 +83,10 @@
 
 (define-shader diffuse ([N #f])
   ;; Surface shaders, L is from the surface to the light
-  (fold-lights [light scene] [color black]
+  (fold-lights [light ($scene)] [color black]
     (let ([nondiff (light-property light '__nondiffuse)])
       (if (< nondiff 1)
-          (let ([L (vec-sub (light-position light) intersect-point)])
+          (let ([L (vec-sub (light-position light) P)])
             (color-add color
               (color-num-mul (light-shade light)
                 (* (- 1 nondiff) (vec-dot (vec-normalize L) N)))))
@@ -94,10 +94,10 @@
 
 (define-shader specular ([N #f] [eye #f] [roughness #f])
   ;; Surface shaders, L is from the surface to the light
-  (fold-lights [light scene] [color black]
+  (fold-lights [light ($scene)] [color black]
     (let ([nonspec (light-property light '__nonspecular)])
       (if (< nonspec 1)
-          (let ([L (vec-sub (light-position light) intersect-point)])
+          (let ([L (vec-sub (light-position light) P)])
             (let ([H (vec-normalize (vec-add L eye))])
               (color-add color
                 (color-num-mul (light-shade light)

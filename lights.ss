@@ -29,7 +29,7 @@
                 (<ray> make
                   [origin point]
                   [direction (vec-sub light-pos point)])
-                scene)])
+                ($scene))])
     (match ls
       [() white]
       [(`(<intersect> [time ,t]) . ,_)
@@ -38,12 +38,11 @@
            black)])))
 
 ;; Light shaders, L is from the light to the surface
-(define L)                              ; should really be in user env
 (define-syntax illuminate
   (syntax-rules ()
     [(_ ($from) body ...)
      (let ([from $from])
-       (fluid-let ([L (vec-sub intersect-point from)])
+       (parameterize ([$L (vec-sub P from)])
          body ...))]))
 
 (define (shadow-mul shadow? intersect-point from Cl)
@@ -56,23 +55,23 @@
   (color-num-mul color intensity))
 
 (define-light distant-light ([color white] [intensity 1] [shadow? #t]) ()
-  (let ([from (light-position light)])
+  (let ([from (light-position ($light))])
     (illuminate (from)
-      (shadow-mul shadow? intersect-point from
+      (shadow-mul shadow? P from
         (color-num-mul color intensity)))))
 
 (define-light point-light ([color white] [intensity 1] [shadow? #t]) ()
-  (let ([from (light-position light)])
+  (let ([from (light-position ($light))])
     (illuminate (from)
-      (shadow-mul shadow? intersect-point from
+      (shadow-mul shadow? P from
         (color-num-mul color (/ intensity (vec-dot L L)))))))
 
 (define-light spot-light
   ([color white] [intensity 1] [shadow? #t] [target (make-vec 0 0 1)]
    [coneangle 30] [coneangle-delta 5] [beamdistribution 2]) ()
-  (let ([from (light-position light)])
+  (let ([from (light-position ($light))])
     (illuminate (from)
-      (shadow-mul shadow? intersect-point from
+      (shadow-mul shadow? P from
         (let* ([A (vec-normalize (vec-sub target from))]
                [cosangle (/ (vec-dot L A) (vec-length L))]
                [coneangle (degrees->radians coneangle)])

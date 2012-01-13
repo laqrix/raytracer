@@ -2,23 +2,23 @@
   (color-mul Os Cs))
 
 (define-shader matte ([Ka 1] [Kd 1])
-  (let ([Nf (faceforward (vec-normalize normal) incoming)])
+  (let ([Nf (faceforward (vec-normalize N) I)])
     (color-mul Os Cs
       (color-add
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((diffuse [N Nf])) Kd)))))
 
 (define-shader metal ([Ka 1] [Ks 1] [roughness .05])
-  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-         [V (vec-normalize (vec-reverse incoming))])
+  (let* ([Nf (faceforward (vec-normalize N) I)]
+         [V (vec-normalize (vec-reverse I))])
     (color-mul Os Cs
       (color-add
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)))))
 
 (define-shader shiny-metal ([Ka 1] [Kd .1] [Ks 1] [roughness .2] [Kr .8])
-  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-         [IN (vec-normalize incoming)]
+  (let* ([Nf (faceforward (vec-normalize N) I)]
+         [IN (vec-normalize I)]
          [V (vec-reverse IN)]
          [R (reflect IN Nf)])
     (color-mul Os Cs
@@ -26,12 +26,12 @@
        (color-num-mul ((ambient)) Ka)
        (color-num-mul ((diffuse [N Nf])) Kd)
        (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
-       (sample-environment scene intersect-point R Kr depth)))))
+       (sample-environment P R Kr)))))
 
 (define-shader plastic ([Ks .5] [Kd .5] [Ka 1] [roughness .1]
                         [specularcolor white])
-  (let ([Nf (faceforward (vec-normalize normal) incoming)]
-        [V  (vec-normalize (vec-reverse incoming))])
+  (let ([Nf (faceforward (vec-normalize N) I)]
+        [V  (vec-normalize (vec-reverse I))])
     (color-add
      (color-mul Os Cs
        (color-add
@@ -42,8 +42,8 @@
       specularcolor))))
 
 (define-shader stripes ([Kd 1] [Ka .5] [frequency 10] [blackcolor black])
-  (let ([pnt (point->surface object intersect-point)]
-        [Nf (faceforward (vec-normalize normal) incoming)])
+  (let ([pnt (point->surface ($object) P)]
+        [Nf (faceforward (vec-normalize N) I)])
     (let* ([t (vec-j pnt)]
            [tmod (mod (* t frequency) 1)])
       (color-mul Os
@@ -55,8 +55,8 @@
          (color-num-mul ((diffuse [N Nf])) Kd))))))
 
 (define-shader checker ([Kd 1] [Ka .5] [frequency 4] [blackcolor black])
-  (let ([pnt (point->surface object intersect-point)]
-        [Nf (faceforward (vec-normalize normal) incoming)])
+  (let ([pnt (point->surface ($object) P)]
+        [Nf (faceforward (vec-normalize N) I)])
     (let ([xmod (mod (* (vec-i pnt) frequency) (+ 1 EPSILON))]
           [ymod (mod (* (vec-j pnt) frequency) (+ 1 EPSILON))]
           [zmod (mod (* (vec-k pnt) frequency) (+ 1 EPSILON))])
@@ -81,25 +81,23 @@
          (color-num-mul ((diffuse [N Nf])) Kd))))))
 
 (define-shader mirror ([Ks 1] [Kr 1] [roughness 0.05])
-  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-         [IN (vec-normalize incoming)]
+  (let* ([Nf (faceforward (vec-normalize N) I)]
+         [IN (vec-normalize I)]
          [V (vec-reverse IN)]
          [R (reflect IN Nf)])
     ;; TODO: Revisit for opacity and color?
     (color-add
      (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
-     (sample-environment scene intersect-point R Kr depth))))
+     (sample-environment P R Kr))))
 
 (define-shader simple-texmap
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor white]
    [texture #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let* ([st (point->texture object
-               (point->surface object intersect-point))]
-         [ss (/ (- (vec-i st) sstart) sscale)]
-         [tt (/ (- (vec-j st) tstart) tscale)]
-         [Nf (faceforward (vec-normalize normal) incoming)]
-         [V  (vec-normalize (vec-reverse incoming))])
+  (let ([ss (/ (- s sstart) sscale)]
+        [tt (/ (- t tstart) tscale)]
+        [Nf (faceforward (vec-normalize N) I)]
+        [V  (vec-normalize (vec-reverse I))])
     (color-add
      (color-mul Os
        (if texture
@@ -132,9 +130,9 @@
      (make-color .71 .71 1.0)           ; pale blue
      (make-color .29 .29 .57)           ; dark blue
      )])
-  (let* ([pnt (point->surface object intersect-point)]
-         [Nf (faceforward (vec-normalize normal) incoming)]
-         [IN (vec-normalize incoming)]
+  (let* ([pnt (point->surface ($object) P)]
+         [Nf (faceforward (vec-normalize N) I)]
+         [IN (vec-normalize I)]
          [V (vec-reverse IN)]
          [color (color-spline
                  (abs (sin (vec-i (vec-num-add pnt
@@ -148,13 +146,13 @@
      (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks))))
 
 (define-shader granite ([Ka .2] [Kd .8])
-  (let ([Nf (faceforward (vec-normalize normal) incoming)]
+  (let ([Nf (faceforward (vec-normalize N) I)]
         [sum
          (let lp ([i 0] [sum 0] [freq 1])
            (if (= i 6)
                sum
                (lp (+ i 1)
-                 (+ sum (/ (abs (- .5 (noise (vec-num-mul incoming
+                 (+ sum (/ (abs (- .5 (noise (vec-num-mul I
                                                (* 4 freq)))))
                            freq))
                  (* 2 freq))))])
@@ -197,7 +195,7 @@
       (color-num-mul ((ambient)) Ka)
       (color-num-mul ((diffuse [N Nf])) Kd)))
    (color-num-mul ((specular [N Nf]
-                     [eye (vec-reverse (vec-normalize incoming))]
+                     [eye (vec-reverse (vec-normalize I))]
                      [roughness roughness]))
      Ks)))
 
@@ -211,9 +209,9 @@
    [lightwood (make-color .5 .2 .067)]
    [darkwood (make-color .15 .077 .028)]
    [ringy 1] [grainy 1])
-  (let* ([pnt (point->surface object intersect-point)]
-         [Nf (faceforward (vec-normalize normal) incoming)]
-         ;;[IN (vec-normalize incoming)]
+  (let* ([pnt (point->surface ($object) P)]
+         [Nf (faceforward (vec-normalize N) I)]
+         ;;[IN (vec-normalize I)]
          ;;[V (vec-reverse IN)]
          [wood (oaktexture pnt
                  ringfreq ringnoise ringnoisefreq 
@@ -227,11 +225,11 @@
       (material-plastic Nf Cwood Ka Kd (* Ks (- 1 (* .5 wood))) roughness))))
 
 (define-shader glow ([attenuation 2])
-  (let ([falloff (vec-dot incoming normal)])
+  (let ([falloff (vec-dot I N)])
     (if (< falloff 0)
         (let ([n (expt (/ (* falloff falloff)
-                          (* (vec-dot incoming incoming)
-                             (vec-dot normal normal)))
+                          (* (vec-dot I I)
+                             (vec-dot N N)))
                    attenuation)])
           (values (color-num-mul Cs n) (make-color n n n)))
         (values Cs transparent))))
@@ -239,43 +237,40 @@
 (define-shader screen
   ([Ka 1] [Kd .75] [Ks .4] [roughness .1] [specularcolor white]
    [density .25] [frequency 20])
-  (let ([st (point->texture object (point->surface object intersect-point))])
-    (if (or (< (mod (* (vec-i st) frequency) 1) density)
-            (< (mod (* (vec-j st) frequency) 1) density))
-        (let ([Nf (faceforward (vec-normalize normal) incoming)]
-              [V  (vec-normalize (vec-reverse incoming))])
-          (values
-           (color-mul Os
-             (color-add
-              (color-mul Cs
-                (color-add
-                 (color-num-mul ((ambient)) Ka)
-                 (color-num-mul ((diffuse [N Nf])) Kd)))
-              (color-mul
-               (color-num-mul ((specular [N Nf] [eye V] [roughness roughness]))
-                 Ks)
-               specularcolor)))
-           opaque))
-        (values black transparent))))
+  (if (or (< (mod (* s frequency) 1) density)
+          (< (mod (* t frequency) 1) density))
+      (let ([Nf (faceforward (vec-normalize N) I)]
+            [V  (vec-normalize (vec-reverse I))])
+        (values
+         (color-mul Os
+           (color-add
+            (color-mul Cs
+              (color-add
+               (color-num-mul ((ambient)) Ka)
+               (color-num-mul ((diffuse [N Nf])) Kd)))
+            (color-mul
+             (color-num-mul ((specular [N Nf] [eye V] [roughness roughness]))
+               Ks)
+             specularcolor)))
+         opaque))
+      (values black transparent)))
 
 (define-shader glass
   ([Ka .2] [Kd 0] [Ks .5] [roughness .05]
    [Kr 1] [Kt 1] [eta 1.5] [transmitcolor white])
-  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-         [IN (vec-normalize incoming)]
+  (let* ([Nf (faceforward (vec-normalize N) I)]
+         [IN (vec-normalize I)]
          [V (vec-reverse IN)])
     (let-values
      ([(kr kt Rfldir Rfrdir)
-       (fresnel IN Nf (if (< (vec-dot incoming normal) 0)
+       (fresnel IN Nf (if (< (vec-dot I N) 0)
                           (/ 1.0 eta)
                           eta))])
      (let* ([kt (- 1 kr)]
             [kr (* kr Kr)]
             [kt (* kt Kt)]
-            [Crefl (sample-environment scene intersect-point
-                     (vec-normalize Rfldir) kr depth)]
-            [Crefr (sample-environment scene intersect-point
-                     (vec-normalize Rfrdir) kt depth)])
+            [Crefl (sample-environment P (vec-normalize Rfldir) kr)]
+            [Crefr (sample-environment P (vec-normalize Rfrdir) kt)])
        (color-add
         (color-mul Cs
           (color-add
@@ -288,26 +283,22 @@
         (color-mul transmitcolor Crefr))))))
 
 (define-shader show-st ()
-  (let* ([Nf (faceforward (vec-normalize normal) incoming)]
-         [st (point->texture object (point->surface object intersect-point))])
-    (make-color (vec-i st) (vec-j st) 0)))
+  (make-color s t 0))
 
 (define-shader show-xyz
   ([xmin -1] [ymin -1] [zmin -1] [xmax 1] [ymax 1] [zmax 1])
   (let* ([scale
           (make-vec (/ 1 (- xmax xmin)) (/ 1 (- ymax ymin)) (/ 1 (- zmax zmin)))]
          [zero (make-vec xmin ymin zmin)]
-         [P (point->surface object intersect-point)]
-         [cubeP (vec-mul (vec-sub P zero) scale)])
+         [pnt (point->surface ($object) P)]
+         [cubeP (vec-mul (vec-sub pnt zero) scale)])
     (make-color (vec-i cubeP) (vec-j cubeP) (vec-k cubeP))))
 
 (define-shader simple-bumpmap
   ([normals #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let* ([st (point->texture object
-               (point->surface object intersect-point))]
-         [ss (/ (- (vec-i st) sstart) sscale)]
-         [tt (/ (- (vec-j st) tstart) tscale)])
+  (let ([ss (/ (- s sstart) sscale)]
+        [tt (/ (- t tstart) tscale)])
     (normals ss tt)))
 
 (module perlin-helpers
@@ -332,21 +323,21 @@
 
 (define-shader lumpy ()
   (import perlin-helpers)
-  (let ([pnt (point->surface object intersect-point)])
-    (bump-normal pnt normal
+  (let ([pnt (point->surface ($object) P)])
+    (bump-normal pnt N
       (lambda (x y z)
         (* 0.03 (noise x y z 8))))))
 
 (define-shader crinkly ()
   (import perlin-helpers)
-  (let ([pnt (point->surface object intersect-point)])
-    (bump-normal pnt normal
+  (let ([pnt (point->surface ($object) P)])
+    (bump-normal pnt N
       (lambda (x y z)
         (* -0.1 (turbulence x y z 1))))))
 
 (define-shader marbled ()
   (import perlin-helpers)
-  (let ([pnt (point->surface object intersect-point)])
-    (bump-normal pnt normal
+  (let ([pnt (point->surface ($object) P)])
+    (bump-normal pnt N
       (lambda (x y z)
         (* 0.01 (stripes (+ x (* 2 (turbulence x y z 1))) 1.6))))))

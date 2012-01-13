@@ -49,6 +49,7 @@
       (list-of-helper '() $exp ([$var $gen] . $rest) $guard))]))
 
 (load "noise.ss")
+(load "env.ss")
 (load "shaders.ss")
 (load "lights.ss")
 (load "objects.ss")
@@ -74,11 +75,10 @@
            acc
            (cons inter acc))))))
 
-(define light)                          ; should really be in user env
 (define (light-shade l)
   (let ([shader (light-shader l)])
     (if shader
-        (fluid-let ([light l])
+        (parameterize ([$light l])
           (shader))
         (errorf 'light-shade "no light shader defined for ~a" l))))
 
@@ -98,11 +98,11 @@
             (let ([incoming (<ray> direction ray)]
                   [intersect-point (traverse-ray ray t)])
               (let*-values
-               ([(intersect-point normal)
-                 (object-displace obj intersect-point
-                   (object-normal obj extra intersect-point))]
+               ([(geometric-normal) (object-normal obj extra intersect-point)]
+                [(intersect-point normal)
+                 (object-displace obj intersect-point geometric-normal)]
                 [(color opacity)
-                 (object-shade scene obj extra intersect-point normal
+                 (object-shade obj extra intersect-point geometric-normal normal
                    incoming depth)])
                (if (opaque? opacity)
                    color
@@ -203,25 +203,27 @@
            (expt (* (color-g c) gain) g)
            (expt (* (color-b c) gain) g))))))
 
-(define E)                              ; should really be in user env
-(define (image-simple camera display scene depth)
+(define (image-simple camera display scene)
   (define shoot-ray (ray-gun camera))
   (define (f x y)
     (let ([ray (shoot-ray x y)])
-      (fluid-let ([E (<ray> origin ray)])
-        (pixel-color-from-ray scene ray 1 depth))))
+      (parameterize ([$E (<ray> origin ray)])
+        (pixel-color-from-ray scene ray 1 MAXDEPTH))))
   (define antialias (make-antialias display f))
   (define exposure (make-exposure display))
   (let ([width (<camera> output-width camera)]
         [height (<camera> output-height camera)])
-    (make-image width height 0 0
-      (lambda (set-pixel)
-        (do ([y 0 (+ y 1)]) ((= y height))
-          (do ([x 0 (+ x 1)]) ((= x width))
-            (set-pixel x y (exposure (antialias x y)))))))))
+    (parameterize ([$camera camera]
+                   [$display display]
+                   [$scene scene])
+      (make-image width height 0 0
+        (lambda (set-pixel)
+          (do ([y 0 (+ y 1)]) ((= y height))
+            (do ([x 0 (+ x 1)]) ((= x width))
+              (set-pixel x y (exposure (antialias x y))))))))))
 
 (define (render f filename camera display scene)
-  (let ([image (time (f camera display scene MAXDEPTH))])
+  (let ([image (time (f camera display scene))])
     (write-tga image filename)))
 
 ;; Scene Syntax
