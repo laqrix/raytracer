@@ -21,21 +21,35 @@
     [,_ 0]))
 
 (define (visibility point light-pos)
-  ;; This style function allows for the implementation of shadow maps,
-  ;; or translucent shadows. I already know that running the surface
-  ;; and volume shaders are too slow, and thus this implementation
-  ;; does not account for shaders.
-  (let lp ([ls (find-intersections
-                (<ray> make
-                  [origin point]
-                  [direction (vec-sub light-pos point)])
-                ($scene))])
-    (match ls
-      [() white]
-      [(`(<intersect> [time ,t]) . ,_)
-       (if (or (< t 0) (> t 1))
-           white
-           black)])))
+  (let ([ray (<ray> make [origin point] [direction (vec-sub light-pos point)])])
+    (let lp ([ls (find-intersections ray ($scene))])
+      (match ls
+        [() white]
+        [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
+         (let ([incoming (<ray> direction ray)]
+               [intersect-point (traverse-ray ray t)])
+           (let*-values
+            ([(geometric-normal) (object-normal obj extra intersect-point)]
+             [(intersect-point normal)
+              (object-displace obj intersect-point geometric-normal)]
+             [(color opacity)
+              (object-shade obj extra intersect-point geometric-normal normal
+                incoming ($depth))])
+            (if (opaque? opacity)
+                black
+                (cond
+                 [(object-volume obj) =>
+                  (lambda (shader)
+                    (let-values ([(vol-color vol-opacity)
+                                  (volume-shade obj
+                                    intersect-point incoming
+                                    color opacity)])
+                      (let ([color (color-add color vol-color)])
+                        (if (opaque? vol-opacity)
+                            color
+                            (color-add color (lp rest))))))]
+                 [else
+                  (color-add color (lp rest))]))))]))))
 
 ;; Light shaders, L is from the light to the surface
 (define-syntax illuminate
