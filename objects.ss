@@ -13,11 +13,16 @@
 (define-scheme-record plane object ())
 (define-scheme-record quadric object ((immutable coefficients)))
 (define-scheme-record polyhedron object ((immutable planes)))
+(define-scheme-record torus object ((immutable radius2)))
 
 (define-scheme-record csg object ((immutable object1) (immutable object2)))
 (define-scheme-record csg-union csg ())
 (define-scheme-record csg-intersect csg ())
 (define-scheme-record csg-difference csg ())
+
+(define (sort-intersections ls)
+  (sort (lambda (x y) (< (<intersect> time x) (<intersect> time y)))
+    ls))
 
 (define (object-intersections object ray)
   ((cond
@@ -25,6 +30,7 @@
     [(plane? object) plane-intersections]
     [(polyhedron? object) polyhedron-intersections]
     [(quadric? object) quadric-intersections]
+    [(torus? object) torus-intersections]
     [(csg-union? object) csg-union-intersections]
     [(csg-intersect? object) csg-intersect-intersections]
     [(csg-difference? object) csg-difference-intersections]
@@ -41,6 +47,7 @@
     [(plane? object) plane-normal]
     [(polyhedron? object) polyhedron-normal]
     [(quadric? object) quadric-normal]
+    [(torus? object) torus-normal]
     [(csg? object) csg-normal]
     [else (errorf 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
@@ -111,6 +118,7 @@
   (cond
    [(sphere? object) (sphere-point->texture object point)]
    [(plane? object) (plane-point->texture object point)]
+   [(torus? object) (torus-point->texture object point)]
    [else (errorf 'point->texture "unknown object type: ~s" object)]))
 
 (define (sphere-intersections object ray)
@@ -235,24 +243,67 @@
                            [object object] [extra #f])))))]))))
 
 (define (quadric-normal object extra intersect-point)
-  ;; This solution doesn't make sense. I don't trust it.
-  (let ([ip (mat-vec-mul (object-M object)
+  (let ([ip (mat-vec-mul (object-Mi object)
               (vec-sub intersect-point (object-center object)))])
     (let ([ipx (vec-i ip)] [ipy (vec-j ip)] [ipz (vec-k ip)])
       (match (quadric-coefficients object)
         [#(,A ,E ,H ,B ,C ,F ,D ,G ,I ,J)
-         (let ([v (make-vec
-                   (+ (* 2 A ipx) (* B ipy) (* C ipz) D)
-                   (+ (* B ipx) (* 2 E ipy) (* F ipz) G)
-                   (+ (* C ipx) (* F ipy) (* 2 H ipz) I))])
-           (mat-vec-mul (object-Mi object) v))]))))
+         (mat-vec-mul (object-M object)
+           (make-vec
+            (+ (* 2 A ipx) (* B ipy) (* C ipz) D)
+            (+ (* B ipx) (* 2 E ipy) (* F ipz) G)
+            (+ (* C ipx) (* F ipy) (* 2 H ipz) I)))]))))
+
+(define (torus-intersections object ray)
+  (let ([origin (<ray> origin ray)]
+        [direction (<ray> direction ray)])
+    (let* ([len (vec-length direction)]
+           [direction (vec-normalize direction)]
+           [R2 (sqr 1)]                 ; outer radius is one
+           [r2 (sqr (torus-radius2 object))]
+           [oy2 (sqr (vec-j origin))]
+           [dy2 (sqr (vec-j direction))]
+           [ody2 (* (vec-j origin) (vec-j direction))]
+           [k1 (+ (sqr (vec-i origin)) (sqr (vec-k origin)) oy2 (- R2) (- r2))]
+           [k2 (+ (* (vec-i origin) (vec-i direction))
+                  (* (vec-k origin) (vec-k direction))
+                  ody2)])
+      (map (lambda (t)
+             (<intersect> make [time (/ t len)] [object object] [extra #f]))
+        (solve-quartic
+         (+ (sqr k1) (* 4 R2 (- oy2 r2)))
+         (* 4 (+ (* k2 k1) (* 2 R2 ody2)))
+         (* 2 (+ k1 (* 2 (+ (sqr k2) (* R2 dy2)))))
+         (* 4 k2)
+         1)))))
+
+(define (torus-normal object extra intersect-point)
+  (let ([ip (mat-vec-mul (object-Mi object)
+              (vec-sub intersect-point (object-center object)))])
+    (let ([d (sqrt (+ (sqr (vec-i ip)) (sqr (vec-k ip))))])
+      (mat-vec-mul (object-M object)
+        (if (> d EPSILON)
+            (vec-sub ip (make-vec (/ (vec-i ip) d) 0 (/ (vec-k ip) d)))
+            ip)))))
+
+(define (torus-point->texture object point)
+  (let* ([x (vec-i point)]
+         [y (vec-j point)]
+         [z (vec-k point)]
+         [u (- 1 (/ (+ (atan z (- x)) pi) (* 2 pi)))]
+         [len (sqrt (+ (sqr x) (sqr z)))]
+         [x (- len 1)]
+         [v (/ (+ (atan y x) pi) (* 2 pi))])
+    (make-vec u v 0)))
 
 (define (csg-union-intersections object ray)
   (map
    (lambda (inter)
      (<intersect> copy inter [object object] [extra inter]))
-   (let union ([a (object-intersections (csg-object1 object) ray)]
-               [b (object-intersections (csg-object2 object) ray)])
+   (let union ([a (sort-intersections
+                   (object-intersections (csg-object1 object) ray))]
+               [b (sort-intersections
+                   (object-intersections (csg-object2 object) ray))])
      (cond
       [(null? a) b]
       [(null? b) a]
@@ -284,8 +335,10 @@
   (map
    (lambda (inter)
      (<intersect> copy inter [object object] [extra inter]))
-   (let intersection ([a (object-intersections (csg-object1 object) ray)]
-                      [b (object-intersections (csg-object2 object) ray)])
+   (let intersection ([a (sort-intersections
+                          (object-intersections (csg-object1 object) ray))]
+                      [b (sort-intersections
+                          (object-intersections (csg-object2 object) ray))])
      (cond
       [(null? a) '()]
       [(null? b) '()]
@@ -321,8 +374,10 @@
   (map
    (lambda (inter)
      (<intersect> copy inter [object object] [extra inter]))
-   (let difference ([a (object-intersections (csg-object1 object) ray)]
-                    [b (object-intersections (csg-object2 object) ray)])
+   (let difference ([a (sort-intersections
+                        (object-intersections (csg-object1 object) ray))]
+                    [b (sort-intersections
+                        (object-intersections (csg-object2 object) ray))])
      (cond
       [(null? a) '()]
       [(null? b) a]
@@ -353,7 +408,7 @@
             [else (errorf 'difference "Unhandled condition ca1=~s, ca2=~s, cb1=~s, cb2=~s" ca1 ca2 cb1 cb2)])))]))))
 
 (define (csg-normal object extra intersect-point)
-  (mat-vec-mul (object-M object)
-    (object-normal (<intersect> object extra)
-      (<intersect> extra extra)
-      (mat-vec-mul (object-Mi object) intersect-point))))
+  (let ([ip (mat-vec-mul (object-Mi object)
+              (vec-sub intersect-point (object-center object)))])
+    (mat-vec-mul (object-M object)
+      (object-normal (<intersect> object extra) (<intersect> extra extra) ip))))

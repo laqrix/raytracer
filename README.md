@@ -12,7 +12,7 @@ This will load 'simple.scene' for the scene. Output will go to 'simple.tga'.
 Features:
 
   - Objects: sphere, plane, general quadrics, general polyhedra, cube, 
-    tetrahedron, octahedron, icosahedron
+    tetrahedron, octahedron, icosahedron, torus
   - CSG: union, intersect, difference
   - Shaders: constant, matte, metal, shiny-metal, plastic, stripes, checker,
     mirror, marble, granite, wood, glow, screen (wireframe)

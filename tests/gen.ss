@@ -183,13 +183,14 @@
    `(("sphere" . (sphere [color (make-color 0 1 0)] [surface (matte)]))
      ("plane" . (plane [color (make-color 0 1 0)] [surface (matte)]))
      ("cube" . (cube [color (make-color 0 1 0)] [surface (matte)]
-            [M (matrix-mul (rotate-x 15) (rotate-y 80))]))
+                 [M (matrix-mul (rotate-x 15) (rotate-y 80))]))
      ("tetrahedron" . (tetrahedron [color (make-color 0 1 0)] [surface (matte)]
-            [M (matrix-mul (rotate-x -45) (rotate-z 45))]))
+                        [M (matrix-mul (rotate-x -45) (rotate-z 45))]))
      ("octahedron" . (octahedron [color (make-color 0 1 0)] [surface (matte)]))
      ("icosahedron" . (icosahedron [color (make-color 0 1 0)] [surface (matte)]))
+     ("torus" . (torus [color (make-color 0 1 0)] [surface (matte)]
+                  [M (rotate-x 15)]))
      ))
-
 
   (for-each
    (lambda (p)
@@ -209,9 +210,12 @@
                    ))]
                [lights
                 (list
-                 (distant-light [position (make-vec -1 1 10)]
+                 (distant-light [position (make-vec -10 10 10)]
                    [color white]
-                   [intensity 1]))]))))))
+                   [intensity 1])
+                 (distant-light [position (make-vec 10 -10 10)]
+                   [color white]
+                   [intensity 1/4]))]))))))
    '(("sphere" . '#(1 1 1 0 0 0 0 0 0 -1))
      ("cylinder" . '#(1 1 0 0 0 0 0 0 0 -1))
      ("cone" . '#(1 1 -1 0 0 0 0 0 0 0))
@@ -472,226 +476,181 @@
    `(("plane" .
       (plane [M (scale 3 3 3)]
         [surface (simple-texmap
-                 [texture (texture [filename "test-texture"])])]))
+                  [texture (texture [filename "test-texture"])])]))
      ("sphere" .
       (sphere [M (scale 2 2 2)]
         [surface (simple-texmap
-                 [texture (texture [filename "test-texture"])])]))
+                  [texture (texture [filename "test-texture"])])]))
+     ("torus" .
+      (torus [M (scale 2 2 2)]
+        [surface (simple-texmap
+                  [texture (texture [filename "test-texture"])])]))
      ("plane-st" .
       (plane [M (scale 3 3 3)]
         [surface (show-st)]))
      ("sphere-st" .
       (sphere [M (scale 2 2 2)]
+        [surface (show-st)]))
+     ("torus-st" .
+      (torus [M (scale 2 2 2)]
         [surface (show-st)]))))
   )
 
 (group csg
-  (build "csg-difference"
-    (render image-simple "csg-difference"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (difference
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-       (lights
-        (list
-         (distant-light
-          (position (make-vec -10 10 10))
-          (color white)
-          (intensity .9))
-         (point-light
-          (position (make-vec 1 1 1))
-          (color white)
-          (intensity 1)))))))
-
-  (build "csg-difference2"
-    (render image-simple "csg-difference2"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (difference
-          [surface (marble)]
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-       (lights
-        (list
-         (distant-light
-          (position (make-vec -10 10 10))
-          (color white)
-          (intensity .9))
-         (point-light
-          (position (make-vec 1 1 1))
-          (color white)
-          (intensity 1)))))))
-
-  (build "csg-intersect"
-    (render image-simple "csg-intersect"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (intersect
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-       (lights
-        (list
-         (distant-light
-          (position (make-vec -10 10 10))
-          (color white)
-          (intensity .9))
-         (point-light
-          (position (make-vec 1 1 1))
-          (color white)
-          (intensity 1)))))))
-
-  (build "csg-intersect2"
-    (render image-simple "csg-intersect2"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (intersect
-          [surface (marble)]
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-       (lights
-        (list
-         (distant-light
-          (position (make-vec -10 10 10))
-          (color white)
-          (intensity .9))
-         (point-light
-          (position (make-vec 1 1 1))
-          (color white)
-          (intensity 1)))))))
-
-  (build "csg-union"
-    (render image-simple "csg-union"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (union
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-        (lights
-         (list
-          (distant-light
-           (position (make-vec -10 10 10))
-           (color white)
-           (intensity .9))
-          (point-light
-           (position (make-vec 1 1 1))
-           (color white)
-           (intensity 1)))))))
-
-  (build "csg-union2"
-    (render image-simple "csg-union2"
-      ,default-camera
-      ,default-display
-      (<scene>
-       make
-       (background-color (make-color 0 .3 .3))
-       (objects
-        (list
-         (plane
-          [center (make-vec 0 -1 0)]
-          [M (matrix-mul (rotate-x -90))]
-          (color (make-color 0 .6 0))
-          (surface (matte)))
-         (union
-          [surface (marble)]
-          [M (matrix-mul (rotate-x 15) (rotate-y 80))]
-          [A (cube
-              [color (make-color 1 0 0)]
-              [surface (matte)]
-              [M (scale .75 .75 .75)])]
-          [B (sphere
-              (color (make-color 0 0 1))
-              (surface (matte)))])))
-       (lights
-        (list
-         (distant-light
-          (position (make-vec -10 10 10))
-          (color white)
-          (intensity .9))
-         (point-light
-          (position (make-vec 1 1 1))
-          (color white)
-          (intensity 1)))))))
+  (for-each
+   (lambda (p)
+     (let ([name (string-append "csg-" (car p))]
+           [expr (cdr p)])
+       ($build name
+         `((render image-simple ,name
+             ,default-camera
+             ,default-display
+             (<scene>
+              make
+              (background-color (make-color 0 .3 .3))
+              (objects
+               (list
+                ,@expr
+                (plane
+                 [center (make-vec 0 -1 0)]
+                 [M (matrix-mul (rotate-x -90))]
+                 (color (make-color 0 .6 0))
+                 (surface (matte)))))
+              (lights
+               (list
+                (distant-light
+                 (position (make-vec -10 10 10))
+                 (color white)
+                 (intensity .9))
+                (point-light
+                 (position (make-vec 1 1 1))
+                 (color white)
+                 (intensity 1))))))))))
+   `(("ops-color"
+      (difference
+       [center (make-vec -2 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))])
+      (union
+       [center (make-vec 0 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))])
+      (intersect
+       [center (make-vec 2 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]))
+     ("ops-marble"
+      (difference
+       [center (make-vec -2 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))])
+      (union
+       [center (make-vec 0 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))])
+      (intersect
+       [center (make-vec 2 0 0)]
+       [M (matrix-mul (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (cube
+           [color (make-color 1 0 0)]
+           [surface (matte)]
+           [M (scale .75 .75 .75)])]
+       [B (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]))
+     ("ops-color2"
+      (difference
+       [center (make-vec -2 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])])
+      (union
+       [center (make-vec 0 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])])
+      (intersect
+       [center (make-vec 2 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])]))
+     ("ops-marble2"
+      (difference
+       [center (make-vec -2 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])])
+      (union
+       [center (make-vec 0 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])])
+      (intersect
+       [center (make-vec 2 0 0)]
+       [M (matrix-mul (scale .75 .75 .75) (rotate-x 15) (rotate-y 80))]
+       [surface (marble)]
+       [A (sphere
+           (color (make-color 0 0 1))
+           (surface (matte)))]
+       [B (torus
+           [color (make-color 1 0 0)]
+           [surface (matte)])]))
+     ))
 
   (build "csg-all"
     (render image-simple "csg-all"

@@ -233,3 +233,104 @@
      (if (and (> y -0.001) (< y 0.001))
          1
          (/ (sin y) y))))
+
+;; Polynomial Solving
+;; c0 + c1 x + c2 x^2 + c3 x^3 + c4 x^4 = 0
+
+(define (is-zero? x)
+  ;; TODO: Might change to more global EPSILON, or may reduce to much
+  ;; smaller number.
+  (define EPSILON 1e-9)
+  (< (- EPSILON) x EPSILON))
+
+(define (cbrt x)
+  (cond
+   [(> x 0) (expt x 1/3)]
+   [(< x 0) (- (expt (- x) 1/3))]
+   [else 0]))
+
+(define (solve-quadratic c0 c1 c2)
+  ;; x^2 + p x + q = 0
+  (let ([p (/ c1 (* 2 c2))]
+        [q (/ c0 c2)])
+    (let ([D (- (* p p) q)])
+      (cond
+       [(is-zero? D) (list (- p))]
+       [(< D 0) '()]
+       [else
+        (let ([d (sqrt D)])
+          (list (- d p) (- (- d) p)))]))))
+
+(define (solve-cubic c0 c1 c2 c3)
+  ;; x^3 + A x^2 + B x + C = 0
+  (let ([A (/ c2 c3)]
+        [B (/ c1 c3)]
+        [C (/ c0 c3)])
+    (let ([sub (/ A 3)])
+      (map (lambda (r) (- r sub))
+        (let* ([A2 (sqr A)]
+               [p (/ (+ (* -1/3 A2) B) 3)]
+               [q (/ (+ (* 2/27 A A2) (* -1/3 A B) C) 2)]
+               [p3 (* p p p)]
+               [D (+ (sqr q) p3)])
+          (cond
+           [(is-zero? D)
+            (if (is-zero? q)
+                (list 0)
+                (let ([u (cbrt (- q))])
+                  (list (* 2 u) (- u))))]
+           [(< D 0)
+            (let ([phi (* 1/3 (acos (/ (- q) (sqrt (- p3)))))]
+                  [t (* 2 (sqrt (- p)))])
+              (list
+               (* t (cos phi))
+               (* (- t) (cos (+ phi (/ pi 3))))
+               (* (- t) (cos (- phi (/ pi 3))))))]
+           [else
+            (let* ([d (sqrt D)]
+                   [u (cbrt (- d q))]
+                   [v (- (cbrt (+ d q)))])
+              (list (+ u v)))]))))))
+
+(define (solve-quartic c0 c1 c2 c3 c4)
+  ;; x^4 + A x^3 + B x^2 + C x + D = 0
+  (call/cc
+   (lambda (return)
+     (let ([A (/ c3 c4)]
+           [B (/ c2 c4)]
+           [C (/ c1 c4)]
+           [D (/ c0 c4)])
+       (let ([sub (/ A 4)])
+         (map (lambda (r) (- r sub))
+           (let* ([A2 (sqr A)]
+                  [p (+ (* -3/8 A2) B)]
+                  [q (+ (* 1/8 A A2) (* -1/2 A B) C)]
+                  [r (+ (* -3/256 A2 A2) (* 1/16 A2 B) (* -1/4 A C) D)])
+             (cond
+              [(is-zero? r)
+               (cons 0 (solve-cubic q p 0 1))]
+              [else
+               (let* ([z (car (solve-cubic
+                               (+ (* 1/2 r p) (* -1/8 q q))
+                               (- r)
+                               (* -1/2 p)
+                               1))]
+                      [u (- (sqr z) r)]
+                      [v (- (* 2 z) p)]
+                      [u (cond
+                          [(is-zero? u) 0]
+                          [(> u 0) (sqrt u)]
+                          [else (return '())])]
+                      [v (cond
+                          [(is-zero? v) 0]
+                          [(> v 0) (sqrt v)]
+                          [else (return '())])])
+                 (append
+                  (solve-quadratic
+                   (- z u)
+                   (if (< q 0) (- v) v)
+                   1)
+                  (solve-quadratic
+                   (+ z u)
+                   (if (< q 0) v (- v))
+                   1)))]))))))))

@@ -62,10 +62,6 @@
 (define (traverse-ray ray t)
   (vec-add (<ray> origin ray) (vec-num-mul (<ray> direction ray) t)))
 
-(define (sort-intersections ls)
-  (sort (lambda (x y) (< (<intersect> time x) (<intersect> time y)))
-        ls))
-
 (define (find-intersections ray scene)
   (sort-intersections
    (fold-list [obj (<scene> objects scene)] [acc '()]
@@ -333,6 +329,17 @@
     (errorf 'quadric "incorrect number of coefficients: ~s" coefficients))
   (make-quadric color opacity surface volume displacement
     center M (matrix-inverse M) coefficients))
+
+(define-defaults torus ([color white]
+                        [opacity opaque]
+                        [surface #f] [volume #f] [displacement #f]
+                        [center (make-vec 0 0 0)]
+                        [radius 1]
+                        [radius2 1/3]
+                        [M (matrix-identity 3)])
+  (let ([M (matrix-mul (scale radius radius radius) M)])
+    (make-torus color opacity surface volume displacement
+      center M (matrix-inverse M) radius2)))
 
 (define-defaults union ([color white]
                         [opacity opaque]
