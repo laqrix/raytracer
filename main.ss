@@ -90,23 +90,23 @@
        (let lp ([ls (find-intersections ray scene)])
          (match ls
            [() (<scene> background-color scene)]
-           [(`(<intersect> [time ,t] [object ,obj] [extra ,extra]) . ,rest)
+           [(,(intersect <= `(<intersect> ,time ,object ,extra)) . ,rest)
             (let ([incoming (<ray> direction ray)]
-                  [intersect-point (traverse-ray ray t)])
+                  [intersect-point (traverse-ray ray time)])
               (let*-values
-               ([(geometric-normal) (object-normal obj extra intersect-point)]
+               ([(geometric-normal) (object-normal object extra intersect-point)]
                 [(intersect-point normal)
-                 (object-displace obj intersect-point geometric-normal)]
+                 (object-displace object intersect-point geometric-normal)]
                 [(color opacity)
-                 (object-shade obj extra intersect-point geometric-normal normal
+                 (object-shade object intersect extra intersect-point geometric-normal normal
                    incoming depth)])
                (if (opaque? opacity)
                    color
                    (cond
-                    [(object-volume obj) =>
+                    [(object-volume object) =>
                      (lambda (shader)
                        (let-values ([(vol-color vol-opacity)
-                                     (volume-shade obj
+                                     (volume-shade object
                                        intersect-point incoming
                                        color opacity)])
                          (let ([color (color-add color vol-color)])
@@ -147,46 +147,6 @@
            [origin (vlincomb3 1 pos (xt x) u (yt y) v)]
            [direction dir]))])))
 
-(define (make-antialias display get-color)
-  (define x-samples (<display> x-samples display))
-  (define y-samples (<display> y-samples display))
-  (if (and (= x-samples 1) (= y-samples 1))
-      get-color
-      (let ()
-        (define filter (<display> filter display))
-        (define x-width (<display> x-width display))
-        (define y-width (<display> y-width display))
-        (define xt
-          (if (<= x-samples 1)
-              (lambda (x) 0)
-              (make-linear-transform 0 (- x-samples 1)
-                (- (/ x-width 2)) (/ x-width 2))))
-        (define yt
-          (if (<= y-samples 1)
-              (lambda (y) 0)
-              (make-linear-transform 0 (- y-samples 1)
-                (- (/ y-width 2)) (/ y-width 2))))
-        (define offsets
-          (list-of (cons (xt x) (yt y))
-            ([x (iota x-samples)] [y (iota y-samples)])))
-        (define x-offsets (map car offsets))
-        (define y-offsets (map cdr offsets))
-        (define weights
-          (map (lambda (x y) (filter x y x-width y-width))
-            x-offsets y-offsets))
-        (define sum-weights (fold-left + 0 weights))
-        (lambda (x y)
-          (color-num-mul
-           (fold-left
-            (lambda (acc xo yo w)
-              (color-add acc
-                (color-num-mul (get-color (+ x xo) (+ y yo)) w)))
-            black
-            x-offsets
-            y-offsets
-            weights)
-           (/ 1 sum-weights))))))
-
 (define (make-exposure display)
   (define gain (<display> gain display))
   (define gamma (<display> gamma display))
@@ -205,7 +165,13 @@
     (let ([ray (shoot-ray x y)])
       (parameterize ([$E (<ray> origin ray)])
         (pixel-color-from-ray scene ray 1 MAXDEPTH))))
-  (define antialias (make-antialias display f))
+  (define antialias (make-antialias
+                     (<display> x-samples display)
+                     (<display> y-samples display)
+                     (<display> filter display)
+                     (<display> x-width display)
+                     (<display> y-width display)
+                     f))
   (define exposure (make-exposure display))
   (let ([width (<camera> output-width camera)]
         [height (<camera> output-height camera)])
@@ -255,6 +221,16 @@
      (make-vec 1 1 -1)
      (make-vec 1 -1 1))))
 
+(define cube-planes
+  (list
+   (make-vec 0 0 1) (make-vec 0 0 -1)
+   (make-vec 0 1 0) (make-vec 0 -1 0)
+   (make-vec 1 0 0) (make-vec -1 0 0)))
+
+(define (cube? object)
+  (and (polyhedron? object)
+       (eq? (polyhedron-planes object) cube-planes)))
+
 (define-defaults cube ([color white]
                        [opacity opaque]
                        [surface #f] [volume #f] [displacement #f]
@@ -262,10 +238,7 @@
                        [M (matrix-identity 3)])
   (make-polyhedron color opacity surface volume displacement
     center M (matrix-inverse M)
-    (list
-     (make-vec 0 0 1) (make-vec 0 0 -1)
-     (make-vec 0 1 0) (make-vec 0 -1 0)
-     (make-vec 1 0 0) (make-vec -1 0 0))))
+    cube-planes))
 
 (define-defaults octahedron ([color white]
                              [opacity opaque]
@@ -370,17 +343,3 @@
                              [B #f])
   (make-csg-difference color opacity surface volume displacement
     center M (matrix-inverse M) A B))
-
-(define-defaults texture ([filename #f])
-  (let ([img (read-texture-file filename)])
-    (let ([xt (make-linear-transform 0 1 0 (- (<image> width img) 1))]
-          [yt (make-linear-transform 0 1 0 (- (<image> height img) 1))])
-      (lambda (s t)
-        (image-ref img (exact (truncate (xt s))) (exact (truncate (yt t))))))))
-
-(define-defaults normals ([filename #f])
-  (let ([img (read-normals-file filename)])
-    (let ([xt (make-linear-transform 0 1 0 (- (<image> width img) 1))]
-          [yt (make-linear-transform 0 1 0 (- (<image> height img) 1))])
-      (lambda (s t)
-        (image-ref img (exact (truncate (xt s))) (exact (truncate (yt t))))))))

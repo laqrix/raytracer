@@ -67,11 +67,11 @@
    [else
     (values ip n)]))
 
-(define (object-shade obj extra ip ng n i d)
+(define (object-shade obj intersect extra ip ng n i d)
   (cond
    [(object-surface obj) =>
     (lambda (shader)
-      (let ([st (delay (point->texture obj (point->surface obj ip)))])
+      (let ([st (delay (point->texture obj intersect (point->surface obj ip)))])
         (parameterize ([$object obj]
                        [$depth d]
                        [$P ip]
@@ -85,7 +85,7 @@
              [(color) (values color Os)]
              [(color opacity) (values color opacity)])))))]
    [(and (csg? obj) (<intersect> object extra))
-    (object-shade (<intersect> object extra) (<intersect> extra extra)
+    (object-shade (<intersect> object extra) extra (<intersect> extra extra)
       ip ng n i d)]
    [else
     (errorf 'object-shade "no object shader defined for ~a" obj)]))
@@ -113,12 +113,13 @@
     (mat-vec-mul (object-Mi object)
       (vec-sub point (object-center object)))]))
 
-(define (point->texture object point)
+(define (point->texture object intersect point)
   ;; Maps point from surface shader coordinates to texture coordinates
   (cond
-   [(sphere? object) (sphere-point->texture object point)]
-   [(plane? object) (plane-point->texture object point)]
-   [(torus? object) (torus-point->texture object point)]
+   [(sphere? object) (sphere-point->texture object intersect point)]
+   [(plane? object) (plane-point->texture object intersect point)]
+   [(torus? object) (torus-point->texture object intersect point)]
+   [(cube? object) (cube-point->texture object intersect point)]
    [else (errorf 'point->texture "unknown object type: ~s" object)]))
 
 (define (sphere-intersections object ray)
@@ -140,7 +141,7 @@
 (define (sphere-normal object extra intersect-point)
   (vec-sub intersect-point (object-center object)))
 
-(define (sphere-point->texture object point)
+(define (sphere-point->texture object intersect point)
   (let* ([N (make-vec 0 0 1)]
          [E (make-vec 1 0 0)]
          [P (vec-normalize point)]
@@ -170,7 +171,7 @@
     1)
    0.5))
 
-(define (plane-point->texture object point)
+(define (plane-point->texture object intersect point)
   (make-vec (mod (vec-i point) 1) (mod (vec-j point) 1) 0))
 
 (define (polyhedron-intersections obj ray)
@@ -208,6 +209,28 @@
 
 (define (polyhedron-normal obj extra intersect-point)
   (mat-vec-mul (object-M obj) extra))
+
+(define (cube-point->texture object intersect point)
+  (define (st s t)
+    (make-vec (mod s 1) (mod t 1) 0))
+  (let ([x (/ (+ (vec-i point) 1) 2)]
+        [y (/ (+ (vec-j point) 1) 2)]
+        [z (/ (+ (vec-k point) 1) 2)]
+        [plane (<intersect> extra intersect)])
+    (match plane
+      [`(<vec> [i 0] [j 0] [k 1])
+       (st (+ (/ x 4) 1/4) (+ (/ (- 1 y) 3) 1/3))] ; forward
+      [`(<vec> [i 0] [j 0] [k -1])
+       (st (+ (/ (- 1 x) 4) 3/4) (+ (/ (- 1 y) 3) 1/3))] ; back
+      [`(<vec> [i 0] [j 1] [k 0])
+       (st (+ (/ x 4) 1/4) (+ (/ z 3) 0))] ; up
+      [`(<vec> [i 0] [j -1] [k 0])
+       (st (+ (/ x 4) 1/4) (+ (/ (- 1 z) 3) 2/3))] ; down
+      [`(<vec> [i 1] [j 0] [k 0])
+       (st (+ (/ (- 1 z) 4) 2/4) (- (+ (/ y 3) 1/3)))] ; right
+      [`(<vec> [i -1] [j 0] [k 0])
+       (st (+ (/ z 4) 0) (+ (/ (- 1 y) 3) 1/3))] ; left
+      )))
 
 (define (quadric-intersections object ray)
   ;; A x^2 + B y^2 + C z^2 + D xy + E xz + F yz + G x + H y + I z + J = 0
@@ -286,7 +309,7 @@
             (vec-sub ip (make-vec (/ (vec-i ip) d) 0 (/ (vec-k ip) d)))
             ip)))))
 
-(define (torus-point->texture object point)
+(define (torus-point->texture object intersect point)
   (let* ([x (vec-i point)]
          [y (vec-j point)]
          [z (vec-k point)]

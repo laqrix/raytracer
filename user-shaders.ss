@@ -90,9 +90,9 @@
      (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
      (sample-environment P R Kr))))
 
-(define-shader simple-texmap
+(define-shader simple-tex
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor white]
-   [texture #f]
+   [tex #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
   (let ([ss (/ (- s sstart) sscale)]
         [tt (/ (- t tstart) tscale)]
@@ -100,9 +100,9 @@
         [V  (vec-normalize (vec-reverse I))])
     (color-add
      (color-mul Os
-       (if texture
+       (if tex
            ;; May also want to use opacity from the texture file here
-           (texture ss tt)
+           (texture tex ss tt)
            Cs)
        (color-add
         (color-num-mul ((ambient)) Ka)
@@ -299,7 +299,7 @@
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
   (let ([ss (/ (- s sstart) sscale)]
         [tt (/ (- t tstart) tscale)])
-    (normals ss tt)))
+    (texture normals ss tt)))
 
 (module perlin-helpers
   (noise stripes turbulence)

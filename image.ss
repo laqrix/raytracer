@@ -81,8 +81,9 @@
   ;; Colors are stored in the range [0, 255] but are represented [0, 1]
   (define t (make-linear-transform 0 255 0.0 1.0))
   (read-tga filename
-    (lambda (r g b a)
-      (make-color (t r) (t g) (t b)))))
+    (case-lambda
+     [(gray) (color (t gray))]
+     [(r g b a) (make-color (t r) (t g) (t b))])))
 
 (define (read-normals-file filename)
   ;; Normals are stored in the range [0, 255] but represent [-1, 1]
@@ -164,3 +165,88 @@
                                   ((= j length) x)
                                 (set-pixel (xt x) (yt y)
                                   (read-pixel pixel-depth)))))))))))))))
+
+(define (make-antialias x-samples y-samples filter x-width y-width get-color)
+  (if (or (and (= x-samples 1) (= y-samples 1))
+          (and (= x-width 0) (= y-width 0)))
+      get-color
+      (let ()
+        (define xt
+          (if (or (<= x-samples 1) (= x-width 0))
+              (lambda (x) 0)
+              (make-linear-transform 0 (- x-samples 1)
+                (- (/ x-width 2)) (/ x-width 2))))
+        (define yt
+          (if (or (<= y-samples 1) (= y-width 0))
+              (lambda (y) 0)
+              (make-linear-transform 0 (- y-samples 1)
+                (- (/ y-width 2)) (/ y-width 2))))
+        (define offsets
+          (list-of (cons (xt x) (yt y))
+            ([x (iota x-samples)] [y (iota y-samples)])))
+        (define x-offsets (map car offsets))
+        (define y-offsets (map cdr offsets))
+        (define weights
+          (map (lambda (x y) (filter x y x-width y-width))
+            x-offsets y-offsets))
+        (define sum-weights (fold-left + 0 weights))
+        (lambda (x y)
+          (color-num-mul
+           (fold-left
+            (lambda (acc xo yo w)
+              (color-add acc
+                (color-num-mul (get-color (+ x xo) (+ y yo)) w)))
+            black
+            x-offsets
+            y-offsets
+            weights)
+           (/ 1 sum-weights))))))
+
+(define (bilin-image-ref img x y)
+  ;; x: [0,width-1], y: [0,height-1]
+  ;; non-integers cause interpolation
+  (define (minmax x size)
+    (let* ([mn (exact (floor x))]
+           [mx (+ mn 1)]
+           [coef (- x mn)]
+           [mn (clamp mn 0 (- size 1))]
+           [mx (clamp mx 0 (- size 1))]
+           [coef (if (= mn mx) 0 coef)])
+      (values mn mx coef)))
+  (let-values ([(xmin xmax xcoef) (minmax x (<image> width img))]
+               [(ymin ymax ycoef) (minmax y (<image> height img))])
+    (let ([c1 (image-ref img xmin ymin)]
+          [c2 (image-ref img xmax ymin)]
+          [c3 (image-ref img xmin ymax)]
+          [c4 (image-ref img xmax ymax)])
+      (color-mix
+       (color-mix c1 c2 xcoef)
+       (color-mix c3 c4 xcoef)
+       ycoef))))
+
+(define (st-image-ref img s t)
+  ;; s,t: [0,1]
+  (bilin-image-ref img
+    (* s (- (<image> width img) 1))
+    (* t (- (<image> height img) 1))))
+
+(define (stwrap-image-ref img s t swrap twrap)
+  ;; swrap,twrap: [black, periodic, clamp]
+  (define (wrap xwrap x)
+    (match xwrap
+      [black x]
+      [clamp (clamp x 0 (- 1 EPSILON))]
+      [periodic (- x (floor x))]))
+  (cond
+   [(and (eq? swrap 'black) (or (< s 0) (>= s 1))) black]
+   [(and (eq? twrap 'black) (or (< t 0) (>= t 1))) black]
+   [else (st-image-ref img (wrap swrap s) (wrap twrap t))]))
+
+(define (texture txt s t)
+  (txt s t))
+
+(define (make-texture filename swrap twrap filter swidth twidth)
+  (let ([img (read-texture-file filename)])
+    (make-antialias 2 2 filter swidth twidth
+      (lambda (s t)
+        (stwrap-image-ref img s t swrap twrap)))))

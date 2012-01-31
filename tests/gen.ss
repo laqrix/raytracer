@@ -474,19 +474,26 @@
                 (ambient-light [intensity 0.1])
                 (distant-light [position (make-vec 5 5 10)]))]))))))
    `(("plane" .
-      (plane [M (scale 3 3 3)]
-        [surface (simple-texmap
-                  [texture (texture [filename "test-texture"])])]))
+      (let ([tex (make-texture "test-texture" 'black 'black box 0 0)])
+        (plane [M (scale 3 3 3)]
+          [surface (simple-tex [tex tex])])))
+     ("cube" .
+      (let ([tex (make-texture "test-texture" 'black 'black box 0 0)])
+        (cube [M (matrix-mul (rotate-x 45) (rotate-y 45))]
+          [surface (simple-tex [tex tex])])))
      ("sphere" .
-      (sphere [M (scale 2 2 2)]
-        [surface (simple-texmap
-                  [texture (texture [filename "test-texture"])])]))
+      (let ([tex (make-texture "test-texture" 'black 'black box 0 0)])
+        (sphere [M (scale 2 2 2)]
+          [surface (simple-tex [tex tex])])))
      ("torus" .
-      (torus [M (scale 2 2 2)]
-        [surface (simple-texmap
-                  [texture (texture [filename "test-texture"])])]))
+      (let ([tex (make-texture "test-texture" 'black 'black box 0 0)])
+        (torus [M (scale 2 2 2)]
+          [surface (simple-tex [tex tex])])))
      ("plane-st" .
       (plane [M (scale 3 3 3)]
+        [surface (show-st)]))
+     ("cube-st" .
+      (cube [M (matrix-mul (rotate-x 45) (rotate-y 45))]
         [surface (show-st)]))
      ("sphere-st" .
       (sphere [M (scale 2 2 2)]
