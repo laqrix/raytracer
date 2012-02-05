@@ -96,7 +96,8 @@
               (let*-values
                ([(geometric-normal) (object-normal object extra intersect-point)]
                 [(intersect-point normal)
-                 (object-displace object intersect-point geometric-normal)]
+                 (object-displace object intersect intersect-point
+                   geometric-normal)]
                 [(color opacity)
                  (object-shade object intersect extra intersect-point geometric-normal normal
                    incoming depth)])

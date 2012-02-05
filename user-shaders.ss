@@ -93,23 +93,26 @@
 (define-shader simple-tex
   ([Ka 1] [Kd 1] [Ks 0.5] [roughness 0.1] [specularcolor white]
    [tex #f]
+   [sflip? #f] [tflip? #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let ([ss (/ (- s sstart) sscale)]
-        [tt (/ (- t tstart) tscale)]
-        [Nf (faceforward (vec-normalize N) I)]
-        [V  (vec-normalize (vec-reverse I))])
-    (color-add
-     (color-mul Os
-       (if tex
-           ;; May also want to use opacity from the texture file here
-           (texture tex ss tt)
-           Cs)
-       (color-add
-        (color-num-mul ((ambient)) Ka)
-        (color-num-mul ((diffuse [N Nf])) Kd)))
-     (color-mul
-      (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
-      specularcolor))))
+  (let ([s (if sflip? (- 1 s) s)]
+        [t (if tflip? (- 1 t) t)])
+    (let ([ss (/ (- s sstart) sscale)]
+          [tt (/ (- t tstart) tscale)]
+          [Nf (faceforward (vec-normalize N) I)]
+          [V  (vec-normalize (vec-reverse I))])
+      (color-add
+       (color-mul Os
+         (if tex
+             ;; May also want to use opacity from the texture file here
+             (texture tex ss tt)
+             Cs)
+         (color-add
+          (color-num-mul ((ambient)) Ka)
+          (color-num-mul ((diffuse [N Nf])) Kd)))
+       (color-mul
+        (color-num-mul ((specular [N Nf] [eye V] [roughness roughness])) Ks)
+        specularcolor)))))
 
 (define-shader marble
   ([Ks .4] [Kd .6] [Ka .1] [roughness .1] [specularcolor white]
@@ -296,10 +299,17 @@
 
 (define-shader simple-bumpmap
   ([normals #f]
+   [sflip? #f] [tflip? #f]
    [sstart 0] [sscale 1] [tstart 0] [tscale 1])
-  (let ([ss (/ (- s sstart) sscale)]
-        [tt (/ (- t tstart) tscale)])
-    (texture normals ss tt)))
+  (let ([s (if sflip? (- 1 s) s)]
+        [t (if tflip? (- 1 t) t)])
+    (let ([ss (/ (- s sstart) sscale)]
+          [tt (/ (- t tstart) tscale)])
+      (let ([pnt (point->surface ($object) P)]
+            [c (texture normals ss tt)])
+        (bump-normal pnt N
+          (lambda (x y z)
+            (- 1 (+ (* x (color-r c)) (* y (color-g c)) (* z (color-b c))))))))))
 
 (module perlin-helpers
   (noise stripes turbulence)

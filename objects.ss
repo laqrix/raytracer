@@ -52,18 +52,21 @@
     [else (errorf 'object-normal "unknown object type: ~s" object)])
    object extra intersect-point))
 
-(define (object-displace obj ip n)
+(define (object-displace obj intersect ip n)
   (cond
    [(object-displacement obj) =>
     (lambda (shader)
-      (parameterize ([$object obj]
-                     [$P ip]
-                     [$Ng n]
-                     [$N n])
-        (call-with-values shader
-          (case-lambda
-           [(normal) (values ip normal)]
-           [(intersect-point normal) (values intersect-point normal)]))))]
+      (let ([st (delay (point->texture obj intersect (point->surface obj ip)))])
+        (parameterize ([$object obj]
+                       [$P ip]
+                       [$Ng n]
+                       [$N n]
+                       [$s (delay (vec-i (force st)))]
+                       [$t (delay (vec-j (force st)))])
+          (call-with-values shader
+            (case-lambda
+             [(normal) (values ip normal)]
+             [(intersect-point normal) (values intersect-point normal)])))))]
    [else
     (values ip n)]))
 
