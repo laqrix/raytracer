@@ -1,4 +1,4 @@
-scheme := petite
+scheme := scheme
 
 .PHONY: all
 all: render
